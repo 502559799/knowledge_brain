@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowledge Brain - 知识大脑</title>
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js" crossorigin></script>
+<script src="https://unpkg.com/antd@5.15.0/dist/antd.min.js" crossorigin></script>
+<script src="https://unpkg.com/@antv/g6@4.8.24/dist/g6.min.js" crossorigin></script>
+<script src="https://unpkg.com/echarts@5.5.0/dist/echarts.min.js" crossorigin></script>
+<link rel="stylesheet" href="https://unpkg.com/antd@5.15.0/dist/reset.css" crossorigin>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f0f2f5}
+#loading-screen{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;color:#1890ff}
+#loading-screen .spinner{width:40px;height:40px;border:4px solid #f0f0f0;border-top:4px solid #1890ff;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.app-header{background:linear-gradient(135deg,#1890ff,#722ed1);color:#fff;padding:0 24px;display:flex;align-items:center;height:64px;box-shadow:0 2px 8px rgba(0,0,0,.15);position:sticky;top:0;z-index:100}
+.app-header h1{font-size:20px;margin:0}
+.app-header .subtitle{margin-left:12px;opacity:.8;font-size:13px}
+.main-layout{display:flex;min-height:calc(100vh - 64px)}
+.sidebar{width:200px;background:#fff;border-right:1px solid #f0f0f0;padding:8px 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto}
+.sidebar .menu-item{padding:12px 24px;cursor:pointer;transition:all .2s;border-left:3px solid transparent;font-size:14px}
+.sidebar .menu-item:hover{background:#e6f7ff;color:#1890ff}
+.sidebar .menu-item.active{background:#e6f7ff;color:#1890ff;border-left-color:#1890ff;font-weight:600}
+.content{flex:1;padding:24px;overflow:auto}
+.stat-card{background:#fff;border-radius:8px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.stat-card .value{font-size:28px;font-weight:700;color:#1890ff}
+.stat-card .label{font-size:13px;color:#999;margin-top:4px}
+.chart-box{background:#fff;border-radius:8px;padding:20px;margin-top:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+#graph-container{width:100%;height:600px;border-radius:8px;overflow:hidden;background:#fafafa;border:1px solid #f0f0f0}
+.search-box{max-width:600px;margin:0 auto 24px}
+.result-item{background:#fff;border-radius:8px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.result-item h4{color:#1890ff;margin-bottom:4px}
+.score-badge{background:#f0f5ff;color:#1890ff;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600}
+.tag-cloud{display:flex;flex-wrap:wrap;gap:8px;padding:12px}
+.tag-item{padding:4px 12px;border-radius:16px;font-size:13px;cursor:default;transition:all .2s}
+.timeline-item{position:relative;padding-left:24px;padding-bottom:20px;border-left:2px solid #1890ff}
+.timeline-item::before{content:'';position:absolute;left:-5px;top:4px;width:8px;height:8px;border-radius:50%;background:#1890ff}
+.wiki-content{background:#fff;border-radius:8px;padding:24px;line-height:1.8}
+.wiki-content a{color:#1890ff;text-decoration:underline}
+.btn{padding:8px 16px;border-radius:6px;border:1px solid #d9d9d9;cursor:pointer;font-size:14px;background:#fff;transition:all .2s}
+.btn:hover{border-color:#1890ff;color:#1890ff}
+.btn-primary{background:#1890ff;color:#fff;border-color:#1890ff}
+.btn-primary:hover{background:#40a9ff}
+.input{padding:8px 12px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px;width:100%}
+.input:focus{border-color:#1890ff;outline:none;box-shadow:0 0 0 2px rgba(24,144,255,.2)}
+select.input{padding:8px}
+.card{background:#fff;border-radius:8px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600}
+.badge-blue{background:#e6f7ff;color:#1890ff}
+.badge-green{background:#f6ffed;color:#52c41a}
+.badge-orange{background:#fff7e6;color:#fa8c16}
+.badge-purple{background:#f9f0ff;color:#722ed1}
+.flex{display:flex}.flex-between{justify-content:space-between}.items-center{align-items:center}.gap-8{gap:8px}.gap-16{gap:16px}
+.mt-16{margin-top:16px}.mb-16{margin-bottom:16px}.mt-8{margin-top:8px}
+.text-secondary{color:#999}.text-sm{font-size:13px}.text-bold{font-weight:600}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.tabs{display:flex;border-bottom:1px solid #f0f0f0;margin-bottom:16px}
+.tab{padding:8px 20px;cursor:pointer;border-bottom:2px solid transparent;font-size:14px;transition:all .2s}
+.tab:hover{color:#1890ff}
+.tab.active{color:#1890ff;border-bottom-color:#1890ff;font-weight:600}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center}
+.modal{background:#fff;border-radius:8px;padding:24px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto}
+.modal h3{margin-bottom:16px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.empty{text-align:center;padding:40px;color:#999}
+.empty-icon{font-size:40px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="loading-screen">
+    <div class="spinner"></div>
+    <p style="margin-top:16px">Loading Knowledge Brain...</p>
+    <p style="font-size:12px;color:#999;margin-top:8px" id="load-status">Loading core libraries...</p>
+  </div>
+</div>
+<script>
+// 加载状态检查
+var libsLoaded = 0;
+var libNames = ['React','ReactDOM','Babel','antd','G6','echarts'];
+function checkLib(name) {
+  libsLoaded++;
+  var el = document.getElementById('load-status');
+  if (el) el.textContent = 'Loaded ' + libsLoaded + '/6: ' + name;
+}
+</script>
+<script onload="checkLib('React')" onerror="document.getElementById('load-status').textContent='Failed to load React CDN'" src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
+<script onload="checkLib('ReactDOM')" onerror="document.getElementById('load-status').textContent='Failed to load ReactDOM CDN'" src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script onload="checkLib('Babel')" onerror="document.getElementById('load-status').textContent='Failed to load Babel CDN'" src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js" crossorigin></script>
+<script onload="checkLib('antd')" src="https://unpkg.com/antd@5.15.0/dist/antd.min.js" crossorigin></script>
+<script onload="checkLib('G6')" src="https://unpkg.com/@antv/g6@4.8.24/dist/g6.min.js" crossorigin></script>
+<script onload="checkLib('echarts')" src="https://unpkg.com/echarts@5.5.0/dist/echarts.min.js" crossorigin></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+const API = '/api';
+
+async function apiFetch(path, opts = {}) {
+  try {
+    const res = await fetch(API + path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+    return await res.json();
+  } catch (e) { console.error('API Error:', path, e); return null; }
+}
+
+// ========== Dashboard ==========
+function DashboardPage() {
+  const [stats, setStats] = useState(null);
+  const [timeline, setTimeline] = useState([]);
+  const [tags, setTags] = useState([]);
+  const pieRef = useRef(null);
+  const lineRef = useRef(null);
+
+  useEffect(() => {
+    apiFetch('/stats').then(d => d && setStats(d));
+    apiFetch('/timeline?days=30').then(d => d && setTimeline(d));
+    apiFetch('/tags').then(d => d && setTags(d));
+  }, []);
+
+  useEffect(() => {
+    if (!stats || !pieRef.current) return;
+    const chart = echarts.init(pieRef.current);
+    const byType = stats.by_type || {};
+    chart.setOption({
+      title: { text: '知识类型分布', left: 'center', textStyle: { fontSize: 14 } },
+      tooltip: { trigger: 'item' },
+      color: ['#1890ff','#52c41a','#faad14','#722ed1','#eb2f96','#13c2c2'],
+      series: [{ type: 'pie', radius: ['40%','70%'], data: Object.entries(byType).map(([k,v])=>({name:k,value:v})), label: {formatter:'{b}: {c}'} }]
+    });
+    const onResize = () => chart.resize();
+    window.addEventListener('resize', onResize);
+    return () => { window.removeEventListener('resize', onResize); chart.dispose(); };
+  }, [stats]);
+
+  useEffect(() => {
+    if (!timeline.length || !lineRef.current) return;
+    const chart = echarts.init(lineRef.current);
+    chart.setOption({
+      title: { text: '近30天知识增长', left: 'center', textStyle: { fontSize: 14 } },
+      tooltip: { trigger: 'axis' },
+      xAxis: { type: 'category', data: timeline.map(t=>t.date), axisLabel: {rotate:45,fontSize:10} },
+      yAxis: { type: 'value', minInterval: 1 },
+      series: [{ type: 'line', data: timeline.map(t=>t.count), smooth: true, areaStyle: {opacity:0.3}, itemStyle: {color:'#1890ff'} }],
+      grid: { left: 40, right: 20, bottom: 60, top: 40 }
+    });
+    const onResize = () => chart.resize();
+    window.addEventListener('resize', onResize);
+    return () => { window.removeEventListener('resize', onResize); chart.dispose(); };
+  }, [timeline]);
+
+  if (!stats) return <div className="empty"><div className="empty-icon">⏳</div><p>加载中...</p></div>;
+
+  const tagColors = ['#1890ff','#52c41a','#faad14','#722ed1','#eb2f96','#13c2c2','#f5222d','#2f54eb'];
+
+  return (
+    <div>
+      <div className="grid-4">
+        <div className="stat-card"><div className="value">{stats.total_items}</div><div className="label">📚 知识总数</div></div>
+        <div className="stat-card"><div className="value">{stats.tag_count}</div><div className="label">🏷️ 标签数</div></div>
+        <div className="stat-card"><div className="value">{stats.entity_count}</div><div className="label">🔬 实体数</div></div>
+        <div className="stat-card"><div className="value">{stats.topic_count}</div><div className="label">📂 主题数</div></div>
+      </div>
+      <div className="grid-2 mt-16">
+        <div className="chart-box" ref={pieRef} style={{height:320}}></div>
+        <div className="chart-box" ref={lineRef} style={{height:320}}></div>
+      </div>
+      <div className="chart-box mt-16">
+        <h3 style={{marginBottom:12}}>🏷️ 热门标签</h3>
+        <div className="tag-cloud">
+          {tags.map((t,i) => (
+            <span key={t.id} className="tag-item" style={{background:tagColors[i%8]+'20',color:tagColors[i%8],fontSize:Math.min(12+t.count*2,22)}}>{t.name} ({t.count})</span>
+          ))}
+          {tags.length===0 && <span className="text-secondary">暂无标签</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== Knowledge Graph ==========
+function GraphPage() {
+  const containerRef = useRef(null);
+  const graphRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedEntity, setSelectedEntity] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const entityTypes = ['all','person','concept','tool','project','organization'];
+
+  const loadGraph = useCallback((entityType) => {
+    setLoading(true);
+    const url = entityType && entityType!=='all' ? '/graph?entity_type='+entityType+'&limit=200' : '/graph?limit=200';
+    apiFetch(url).then(data => {
+      if (data && data.nodes) renderGraph(data);
+      setLoading(false);
+    });
+  }, []);
+
+  useEffect(() => { loadGraph('all'); }, [loadGraph]);
+
+  function renderGraph(data) {
+    if (!containerRef.current) return;
+    if (graphRef.current) { try{graphRef.current.destroy();}catch(e){} }
+
+    const typeColors = {person:'#f5222d',concept:'#1890ff',tool:'#52c41a',project:'#722ed1',organization:'#faad14'};
+    const typeIcons = {person:'👤',concept:'💡',tool:'🔧',project:'📋',organization:'🏢'};
+
+    const nodes = data.nodes.map(n => ({
+      id: String(n.id),
+      label: (typeIcons[n.type]||'')+' '+(n.display_name||n.name),
+      size: Math.max(30, Math.min(80, 20+(n.mention_count||1)*8)),
+      style: { fill: typeColors[n.type]||'#1890ff', stroke: '#fff', lineWidth: 2 },
+      labelCfg: { style: { fill: '#333', fontSize: 11 }, position: 'bottom' },
+      entityData: n
+    }));
+
+    const edges = data.edges.map(e => ({
+      source: String(e.source_entity_id),
+      target: String(e.target_entity_id),
+      label: e.relation_type,
+      style: { stroke: '#ccc', lineWidth: 1.5, endArrow: true },
+      labelCfg: { style: { fill: '#999', fontSize: 9 }, autoRotate: true }
+    }));
+
+    const graph = new G6.Graph({
+      container: containerRef.current,
+      width: containerRef.current.offsetWidth,
+      height: 600,
+      modes: { default: ['drag-canvas','zoom-canvas','drag-node'] },
+      layout: { type: 'force', preventOverlap: true, nodeSize: 80, linkDistance: 180, nodeStrength: -400 },
+      defaultNode: { type: 'circle', style: { lineWidth: 2 } },
+      defaultEdge: { type: 'quadratic' },
+    });
+
+    graph.data({ nodes, edges });
+    graph.render();
+
+    graph.on('node:click', (evt) => {
+      const model = evt.item.getModel();
+      if (model.entityData) setSelectedEntity(model.entityData);
+    });
+
+    graphRef.current = graph;
+
+    const onResize = () => {
+      if (graphRef.current && containerRef.current)
+        graphRef.current.changeSize(containerRef.current.offsetWidth, 600);
+    };
+    window.addEventListener('resize', onResize);
+  }
+
+  const expandEntity = async (entityId) => {
+    setLoading(true);
+    const data = await apiFetch('/graph?entity_id='+entityId+'&depth=2&limit=50');
+    if (data && data.nodes) renderGraph(data);
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <div className="flex gap-8 mb-16 items-center">
+        <select className="input" style={{width:160}} value={filter} onChange={e=>{setFilter(e.target.value);loadGraph(e.target.value)}}>
+          {entityTypes.map(t=><option key={t} value={t}>{t==='all'?'全部类型':t}</option>)}
+        </select>
+        <span className="text-secondary text-sm">💡 拖拽节点/画布 · 滚轮缩放 · 点击节点查看详情</span>
+      </div>
+      {loading && <div className="empty" style={{padding:20}}><div className="empty-icon">⏳</div>加载图谱中...</div>}
+      <div id="graph-container" ref={containerRef} style={{display:loading?'none':'block'}}></div>
+      {selectedEntity && (
+        <div className="modal-overlay" onClick={()=>setSelectedEntity(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <h3>{selectedEntity.display_name}</h3>
+            <div className="mb-16"><span className="badge badge-blue">{selectedEntity.type}</span></div>
+            <p>{selectedEntity.description}</p>
+            <p className="mt-8 text-secondary">提及次数: {selectedEntity.mention_count}</p>
+            <div className="modal-actions">
+              <button className="btn btn-primary" onClick={()=>{expandEntity(selectedEntity.id);setSelectedEntity(null)}}>🔗 展开关系</button>
+              <button className="btn" onClick={()=>setSelectedEntity(null)}>关闭</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ========== Topics ==========
+function TopicsPage() {
+  const [topics, setTopics] = useState([]);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    apiFetch('/topics').then(d => d && setTopics(d));
+  }, []);
+
+  useEffect(() => {
+    if (!topics.length || !chartRef.current) return;
+    const chart = echarts.init(chartRef.current);
+    const data = topics.map(t=>({name:t.label,value:t.document_count}));
+    chart.setOption({
+      title: { text: '主题聚类旭日图', left: 'center', textStyle: {fontSize:14} },
+      tooltip: { formatter: p => p.name+': '+p.value+' 篇' },
+      color: ['#1890ff','#52c41a','#faad14','#722ed1','#eb2f96','#13c2c2','#f5222d'],
+      series: [{ type: 'sunburst', radius: ['10%','90%'], data, label: {rotate:'radial',fontSize:11} }]
+    });
+    const onResize = () => chart.resize();
+    window.addEventListener('resize', onResize);
+    return () => { window.removeEventListener('resize', onResize); chart.dispose(); };
+  }, [topics]);
+
+  return (
+    <div>
+      <div className="flex flex-between items-center mb-16">
+        <h2>📂 主题聚类</h2>
+        <button className="btn btn-primary" onClick={()=>{apiFetch('/topics/rebuild',{method:'POST'});alert('主题重建已触发')}}>🔄 重建主题</button>
+      </div>
+      <div className="chart-box" ref={chartRef} style={{height:400}}></div>
+      <div className="grid-3 mt-16">
+        {topics.map(t=>(
+          <div className="card" key={t.id}>
+            <div className="flex flex-between items-center">
+              <strong>{t.label}</strong>
+              <span className="badge badge-blue">{t.document_count} 篇</span>
+            </div>
+            <p className="text-secondary text-sm mt-8">{t.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ========== Timeline ==========
+function TimelinePage() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const typeIcons = {file:'📄',webpage:'🌐',bookmark:'🔖',note:'📝',paper:'📰',email:'📧'};
+
+  useEffect(() => {
+    apiFetch('/items?limit=50').then(d => { if(d) setItems(d); setLoading(false); });
+  }, []);
+
+  if (loading) return <div className="empty"><div className="empty-icon">⏳</div>加载中...</div>;
+
+  return (
+    <div>
+      <h2 className="mb-16">📅 知识时间线</h2>
+      {items.length===0 && <div className="empty"><div className="empty-icon">📭</div>暂无知识</div>}
+      {items.map(item=>(
+        <div className="timeline-item" key={item.id}>
+          <div className="flex flex-between">
+            <strong>{typeIcons[item.content_type]||'📄'} {item.title||item.id?.slice(0,8)}</strong>
+            <span className="text-secondary text-sm">{item.collected_at?.slice(0,10)}</span>
+          </div>
+          {item.summary && <p className="text-secondary text-sm mt-8" style={{maxWidth:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.summary}</p>}
+          <span className="badge badge-blue mt-8" style={{display:'inline-block'}}>{item.content_type}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ========== Search ==========
+function SearchPage() {
+  const [results, setResults] = useState([]);
+  const [answer, setAnswer] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState('rag');
+  const [query, setQuery] = useState('');
+
+  const handleSearch = async () => {
+    if (!query.trim()) return;
+    setLoading(true); setAnswer(''); setResults([]);
+    try {
+      if (mode === 'rag') {
+        const d = await apiFetch('/search/rag', {method:'POST',body:JSON.stringify({query,top_k:5})});
+        if (d) { setAnswer(d.answer||''); setResults(d.sources||[]); }
+      } else if (mode === 'semantic') {
+        const d = await apiFetch('/search/semantic', {method:'POST',body:JSON.stringify({query,top_k:10})});
+        if (d) setResults(d);
+      } else {
+        const d = await apiFetch('/search/keyword?q='+encodeURIComponent(query)+'&limit=20');
+        if (d) setResults(d);
+      }
+    } catch(e) { alert('搜索失败'); }
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <div className="search-box">
+        <div className="tabs">
+          {[{k:'rag',l:'🤖 RAG问答'},{k:'semantic',l:'🔍 语义搜索'},{k:'keyword',l:'📝 关键词搜索'}].map(t=>(
+            <div key={t.k} className={'tab'+(mode===t.k?' active':'')} onClick={()=>setMode(t.k)}>{t.l}</div>
+          ))}
+        </div>
+        <div className="flex gap-8">
+          <input className="input" placeholder="输入问题或关键词..." value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSearch()} />
+          <button className="btn btn-primary" onClick={handleSearch} disabled={loading}>{loading?'搜索中...':'搜索'}</button>
+        </div>
+      </div>
+      {answer && (
+        <div className="chart-box mb-16">
+          <h3>📖 AI 回答</h3>
+          <p style={{whiteSpace:'pre-wrap',lineHeight:1.8,marginTop:12}}>{answer}</p>
+        </div>
+      )}
+      {results.map((r,i)=>(
+        <div className="result-item" key={i}>
+          <div className="flex flex-between items-center">
+            <h4>{r.metadata?.title||r.id?.slice(0,8)||('结果 '+(i+1))}</h4>
+            {r.score!=null && <span className="score-badge">{typeof r.score==='number'?r.score.toFixed(3):r.score}</span>}
+          </div>
+          <p className="text-secondary text-sm mt-8">{(r.content||'').slice(0,200)}</p>
+        </div>
+      ))}
+      {!loading && !answer && results.length===0 && <div className="empty"><div className="empty-icon">🔍</div>搜索知识库</div>}
+    </div>
+  );
+}
+
+// ========== Wiki ==========
+function WikiPage() {
+  const [topics, setTopics] = useState([]);
+  const [articles, setArticles] = useState([]);
+  const [selectedTopic, setSelectedTopic] = useState(null);
+
+  useEffect(() => { apiFetch('/topics').then(d=>d&&setTopics(d)); }, []);
+
+  const selectTopic = async (topicId) => {
+    setSelectedTopic(topicId);
+    const data = await apiFetch('/wiki/articles/'+topicId);
+    if (data) setArticles(data);
+  };
+
+  return (
+    <div>
+      <h2 className="mb-16">📚 知识百科</h2>
+      <div style={{display:'grid',gridTemplateColumns:'200px 1fr',gap:16}}>
+        <div className="card" style={{padding:0,overflow:'hidden'}}>
+          <div style={{padding:'12px 16px',borderBottom:'1px solid #f0f0f0',fontWeight:600}}>主题列表</div>
+          {topics.map(t=>(
+            <div key={t.id} style={{padding:'10px 16px',cursor:'pointer',background:selectedTopic===t.id?'#e6f7ff':'transparent',borderLeft:selectedTopic===t.id?'3px solid #1890ff':'3px solid transparent'}}
+                 onClick={()=>selectTopic(t.id)}>
+              {t.label} <span className="badge badge-blue" style={{float:'right'}}>{t.document_count}</span>
+            </div>
+          ))}
+          {topics.length===0 && <div className="text-secondary" style={{padding:16}}>暂无主题</div>}
+        </div>
+        <div>
+          {articles.map(a=>(
+            <div className="wiki-content mb-16" key={a.article_id}>
+              <h3>{a.title}</h3>
+              <div style={{marginTop:12}} dangerouslySetInnerHTML={{__html:(a.content||'').replace(/\[\[([^\]]+)\]\]/g,'<a href="javascript:void(0)">$1</a>').replace(/\n/g,'<br/>')}} />
+            </div>
+          ))}
+          {!selectedTopic && <div className="empty"><div className="empty-icon">📚</div>选择左侧主题查看百科</div>}
+          {selectedTopic && articles.length===0 && <div className="empty"><div className="empty-icon">📝</div>该主题暂无百科文章</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== Backup ==========
+function BackupPage() {
+  const [backups, setBackups] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadBackups = () => { apiFetch('/backup/list').then(d=>d&&setBackups(d)); };
+  useEffect(loadBackups, []);
+
+  const createBackup = async () => {
+    setLoading(true);
+    await apiFetch('/backup/create', {method:'POST'});
+    alert('✅ 备份创建成功');
+    loadBackups();
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <div className="flex flex-between items-center mb-16">
+        <h2>💾 备份管理</h2>
+        <button className="btn btn-primary" onClick={createBackup} disabled={loading}>{loading?'备份中...':'创建备份'}</button>
+      </div>
+      <div className="card">
+        {backups.map((b,i)=>(
+          <div key={i} style={{padding:'12px 0',borderBottom:'1px solid #f0f0f0'}} className="flex flex-between items-center">
+            <span>{b.name}</span>
+            <div className="flex gap-8 items-center">
+              <span className="badge badge-green">{(b.size/1024).toFixed(1)} KB</span>
+              <span className="text-secondary text-sm">{b.created?.slice(0,19)}</span>
+            </div>
+          </div>
+        ))}
+        {backups.length===0 && <div className="empty"><div className="empty-icon">💾</div>暂无备份</div>}
+      </div>
+    </div>
+  );
+}
+
+// ========== Main App ==========
+function App() {
+  const [page, setPage] = useState('dashboard');
+
+  const menuItems = [
+    {key:'dashboard',icon:'📊',label:'仪表盘'},
+    {key:'graph',icon:'🕸️',label:'知识图谱'},
+    {key:'topics',icon:'📂',label:'主题地图'},
+    {key:'timeline',icon:'📅',label:'时间线'},
+    {key:'search',icon:'🔍',label:'搜索'},
+    {key:'wiki',icon:'📚',label:'百科'},
+    {key:'backup',icon:'💾',label:'备份'},
+  ];
+
+  const pages = {dashboard:DashboardPage,graph:GraphPage,topics:TopicsPage,timeline:TimelinePage,search:SearchPage,wiki:WikiPage,backup:BackupPage};
+  const CurrentPage = pages[page] || DashboardPage;
+
+  return (
+    <div>
+      <div className="app-header">
+        <h1>🧠 Knowledge Brain</h1>
+        <span className="subtitle">个人知识大脑系统</span>
+      </div>
+      <div className="main-layout">
+        <div className="sidebar">
+          {menuItems.map(item=>(
+            <div key={item.key} className={'menu-item'+(page===item.key?' active':'')} onClick={()=>setPage(item.key)}>
+              {item.icon} {item.label}
+            </div>
+          ))}
+        </div>
+        <div className="content">
+          <CurrentPage />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>

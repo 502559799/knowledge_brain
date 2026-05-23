@@ -1,0 +1,34 @@
+# Knowledge Brain 配置模板
+data_dir: ~/.knowledge-brain
+
+embedding:
+  provider: dashscope
+  model: text-embedding-v4
+  api_key: ${DASHSCOPE_API_KEY}
+
+llm:
+  provider: dashscope
+  model: qwen-plus
+  api_key: ${DASHSCOPE_API_KEY}
+
+chunking:
+  max_chunk_size: 1000
+  chunk_overlap: 100
+
+storage:
+  type: chroma
+  persist_directory: ~/.knowledge-brain/db/chroma
+
+query:
+  rag:
+    top_k: 5
+    temperature: 0.3
+    max_tokens: 1000
+  pipeline:
+    top_k: 10
+    rerank_top_k: 5
+
+backup:
+  enabled: false
+  schedule: "0 2 * * *"
+  retention_days: 30
