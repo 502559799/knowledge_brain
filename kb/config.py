@@ -1,7 +1,11 @@
 """配置管理模块 - YAML配置 + 环境变量替换"""
-import logging, os, re
+import copy
+import logging
+import os
+import re
 from pathlib import Path
 from typing import Any, Dict, Optional
+
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -27,8 +31,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
                "s3": {"region": "us-west-2", "access_key_id": "", "secret_access_key": "", "bucket": "kb-backups"}},
 }
 
+
 def _expand_env_vars(value: str) -> str:
     return re.sub(r'\$\{(\w+)\}', lambda m: os.environ.get(m.group(1), m.group(0)), value)
+
 
 def _expand_env_vars_in_config(config: Any) -> Any:
     if isinstance(config, dict):
@@ -39,15 +45,18 @@ def _expand_env_vars_in_config(config: Any) -> Any:
         return _expand_env_vars(config)
     return config
 
+
 class Config:
     """配置管理器"""
+
     def __init__(self, config_path: Optional[Path] = None):
         self._config_path = config_path or Path.home() / ".knowledge-brain" / "config.yaml"
         self._config: Dict[str, Any] = {}
         self.load()
 
     def load(self) -> None:
-        self._config = DEFAULT_CONFIG.copy()
+        # Use deep copy to avoid polluting DEFAULT_CONFIG
+        self._config = copy.deepcopy(DEFAULT_CONFIG)
         if self._config_path.exists():
             with open(self._config_path, "r", encoding="utf-8") as f:
                 file_config = yaml.safe_load(f)
@@ -72,6 +81,15 @@ class Config:
                 return default
         return value
 
+    def set(self, key: str, value: Any) -> None:
+        keys = key.split(".")
+        d = self._config
+        for k in keys[:-1]:
+            if k not in d or not isinstance(d[k], dict):
+                d[k] = {}
+            d = d[k]
+        d[keys[-1]] = value
+
     @property
     def data_dir(self) -> Path:
         return Path(os.path.expanduser(self.get("data_dir", DEFAULT_CONFIG["data_dir"])))
@@ -83,14 +101,33 @@ class Config:
             yaml.dump(self._config, f, default_flow_style=False, allow_unicode=True)
 
     def to_dict(self) -> Dict[str, Any]:
-        return self._config.copy()
+        return copy.deepcopy(self._config)
+
+    def to_safe_dict(self) -> Dict[str, Any]:
+        """Return config with API keys masked for UI display"""
+        d = copy.deepcopy(self._config)
+
+        def mask(obj: Any) -> Any:
+            if isinstance(obj, dict):
+                result = {}
+                for k, v in obj.items():
+                    if any(secret in k.lower() for secret in ("api_key", "secret", "password", "token")):
+                        result[k] = "***" if v else ""
+                    else:
+                        result[k] = mask(v)
+                return result
+            elif isinstance(obj, list):
+                return [mask(item) for item in obj]
+            return obj
+
+        return mask(d)
 
     def validate_services(self) -> dict:
         status = {"embedding_available": False, "llm_available": False}
-        emb_key = self.get("embedding.dashscope.api_key", "") or self.get("embedding.api_key", "")
-        if emb_key and not emb_key.startswith("${"):
+        emb_key = self.get("embedding.api_key", "") or self.get("embedding.dashscope.api_key", "")
+        if emb_key and not str(emb_key).startswith("${"):
             status["embedding_available"] = True
         llm_key = self.get("llm.api_key", "")
-        if llm_key and not llm_key.startswith("${"):
+        if llm_key and not str(llm_key).startswith("${"):
             status["llm_available"] = True
         return status

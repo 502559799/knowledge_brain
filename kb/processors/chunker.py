@@ -15,7 +15,8 @@ class Chunker(BaseProcessor):
         content = str(data) if not isinstance(data, str) else data
         if not content.strip():
             return ProcessResult(success=False, error="内容为空")
-        chunks = self.chunk(content)
+        doc_id = kwargs.get("doc_id", "")
+        chunks = self.chunk(content, doc_id=doc_id)
         return ProcessResult(success=True, data=chunks, metadata={"chunk_count": len(chunks)})
 
     def chunk(self, content: str, doc_id: str = "") -> List[Dict[str, Any]]:
@@ -31,7 +32,7 @@ class Chunker(BaseProcessor):
             chunk_text = content[start:end]
             # 在句子边界处断开
             if end < len(content):
-                for sep in ["。", ".", "！", "？", "！", "\n\n", "\n"]:
+                for sep in ["。", ".", "！", "？", "!", "?", "\n\n", "\n"]:
                     pos = chunk_text.rfind(sep)
                     if pos > self.max_chunk_size * 0.3:
                         chunk_text = chunk_text[:pos + len(sep)]

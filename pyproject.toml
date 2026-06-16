@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "knowledge-brain"
-version = "0.1.0"
+version = "0.2.0"
 description = "Knowledge Brain - 个人知识大脑系统，采集、处理、查询与可视化"
 readme = "README.md"
 license = {text = "MIT"}

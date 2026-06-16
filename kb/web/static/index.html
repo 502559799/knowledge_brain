@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Knowledge Brain - 知识大脑</title>
+<title>Knowledge Brain - 个人知识大脑</title>
 <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js" crossorigin></script>
@@ -13,86 +13,120 @@
 <link rel="stylesheet" href="https://unpkg.com/antd@5.15.0/dist/reset.css" crossorigin>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f0f2f5}
-#loading-screen{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;color:#1890ff}
-#loading-screen .spinner{width:40px;height:40px;border:4px solid #f0f0f0;border-top:4px solid #1890ff;border-radius:50%;animation:spin 1s linear infinite}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:#f5f7fa;color:#1a1a2e}
+#loading-screen{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;color:#4f46e5}
+#loading-screen .spinner{width:40px;height:40px;border:4px solid #ede9fe;border-top:4px solid #4f46e5;border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.app-header{background:linear-gradient(135deg,#1890ff,#722ed1);color:#fff;padding:0 24px;display:flex;align-items:center;height:64px;box-shadow:0 2px 8px rgba(0,0,0,.15);position:sticky;top:0;z-index:100}
-.app-header h1{font-size:20px;margin:0}
-.app-header .subtitle{margin-left:12px;opacity:.8;font-size:13px}
-.main-layout{display:flex;min-height:calc(100vh - 64px)}
-.sidebar{width:200px;background:#fff;border-right:1px solid #f0f0f0;padding:8px 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto}
-.sidebar .menu-item{padding:12px 24px;cursor:pointer;transition:all .2s;border-left:3px solid transparent;font-size:14px}
-.sidebar .menu-item:hover{background:#e6f7ff;color:#1890ff}
-.sidebar .menu-item.active{background:#e6f7ff;color:#1890ff;border-left-color:#1890ff;font-weight:600}
-.content{flex:1;padding:24px;overflow:auto}
-.stat-card{background:#fff;border-radius:8px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.stat-card .value{font-size:28px;font-weight:700;color:#1890ff}
-.stat-card .label{font-size:13px;color:#999;margin-top:4px}
-.chart-box{background:#fff;border-radius:8px;padding:20px;margin-top:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-#graph-container{width:100%;height:600px;border-radius:8px;overflow:hidden;background:#fafafa;border:1px solid #f0f0f0}
-.search-box{max-width:600px;margin:0 auto 24px}
-.result-item{background:#fff;border-radius:8px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.result-item h4{color:#1890ff;margin-bottom:4px}
-.score-badge{background:#f0f5ff;color:#1890ff;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600}
-.tag-cloud{display:flex;flex-wrap:wrap;gap:8px;padding:12px}
-.tag-item{padding:4px 12px;border-radius:16px;font-size:13px;cursor:default;transition:all .2s}
-.timeline-item{position:relative;padding-left:24px;padding-bottom:20px;border-left:2px solid #1890ff}
-.timeline-item::before{content:'';position:absolute;left:-5px;top:4px;width:8px;height:8px;border-radius:50%;background:#1890ff}
-.wiki-content{background:#fff;border-radius:8px;padding:24px;line-height:1.8}
-.wiki-content a{color:#1890ff;text-decoration:underline}
-.btn{padding:8px 16px;border-radius:6px;border:1px solid #d9d9d9;cursor:pointer;font-size:14px;background:#fff;transition:all .2s}
-.btn:hover{border-color:#1890ff;color:#1890ff}
-.btn-primary{background:#1890ff;color:#fff;border-color:#1890ff}
-.btn-primary:hover{background:#40a9ff}
-.input{padding:8px 12px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px;width:100%}
-.input:focus{border-color:#1890ff;outline:none;box-shadow:0 0 0 2px rgba(24,144,255,.2)}
-select.input{padding:8px}
-.card{background:#fff;border-radius:8px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:12px}
-.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600}
-.badge-blue{background:#e6f7ff;color:#1890ff}
-.badge-green{background:#f6ffed;color:#52c41a}
-.badge-orange{background:#fff7e6;color:#fa8c16}
-.badge-purple{background:#f9f0ff;color:#722ed1}
-.flex{display:flex}.flex-between{justify-content:space-between}.items-center{align-items:center}.gap-8{gap:8px}.gap-16{gap:16px}
-.mt-16{margin-top:16px}.mb-16{margin-bottom:16px}.mt-8{margin-top:8px}
-.text-secondary{color:#999}.text-sm{font-size:13px}.text-bold{font-weight:600}
+.app-header{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;box-shadow:0 4px 12px rgba(79,70,229,.15);position:sticky;top:0;z-index:100}
+.app-header .brand{display:flex;align-items:center;gap:12px}
+.app-header h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.app-header .badge-ver{background:rgba(255,255,255,.2);padding:2px 10px;border-radius:12px;font-size:11px;font-weight:500}
+.main-layout{display:flex;min-height:calc(100vh - 60px)}
+.sidebar{width:220px;background:#fff;border-right:1px solid #e5e7eb;padding:12px 0;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;flex-shrink:0}
+.sidebar .menu-item{padding:11px 20px;cursor:pointer;transition:all .15s;border-left:3px solid transparent;font-size:14px;color:#4b5563;display:flex;align-items:center;gap:10px;margin:2px 0}
+.sidebar .menu-item:hover{background:#f5f3ff;color:#4f46e5}
+.sidebar .menu-item.active{background:linear-gradient(90deg,#f5f3ff 0%,transparent 100%);color:#4f46e5;border-left-color:#7c3aed;font-weight:600}
+.sidebar .menu-icon{font-size:18px;width:24px;text-align:center}
+.sidebar .section-label{padding:16px 20px 8px;font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px}
+.content{flex:1;padding:24px 32px;overflow:auto;min-width:0}
+.page-title{font-size:22px;font-weight:700;margin-bottom:20px;color:#1a1a2e}
+.stat-card{background:#fff;border-radius:12px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #f3f4f6;transition:transform .15s,box-shadow .15s}
+.stat-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(79,70,229,.1)}
+.stat-card .value{font-size:32px;font-weight:800;background:linear-gradient(135deg,#4f46e5,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card .label{font-size:13px;color:#6b7280;margin-top:4px}
+.chart-box{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #f3f4f6}
+.chart-box h3{font-size:15px;font-weight:600;margin-bottom:12px;color:#374151}
+#graph-container{width:100%;height:620px;border-radius:12px;overflow:hidden;background:#fafbfc;border:1px solid #e5e7eb}
+.search-container{max-width:720px;margin:0 auto 24px}
+.result-item{background:#fff;border-radius:10px;padding:18px 20px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);border:1px solid #f3f4f6;transition:all .15s}
+.result-item:hover{border-color:#c4b5fd;box-shadow:0 2px 8px rgba(79,70,229,.08)}
+.result-item h4{color:#4f46e5;margin-bottom:6px;font-size:15px;font-weight:600}
+.score-badge{background:#f5f3ff;color:#7c3aed;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.answer-box{background:linear-gradient(135deg,#f5f3ff,#fce7f3);border-radius:12px;padding:24px;margin-bottom:20px;border:1px solid #e9d5ff;max-width:720px;margin-left:auto;margin-right:auto}
+.answer-box h3{color:#7c3aed;margin-bottom:12px;font-size:16px}
+.answer-content{white-space:pre-wrap;line-height:1.8;font-size:14px;color:#374151}
+.tag-cloud{display:flex;flex-wrap:wrap;gap:8px;padding:8px 0}
+.tag-item{padding:5px 14px;border-radius:20px;font-size:13px;cursor:pointer;transition:all .2s;border:1px solid transparent}
+.tag-item:hover{transform:scale(1.05)}
+.card{background:#fff;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05);border:1px solid #f3f4f6;margin-bottom:12px;transition:all .15s}
+.card:hover{border-color:#e5e7eb}
+.card-clickable{cursor:pointer}
+.card-clickable:hover{border-color:#c4b5fd}
+.badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:500}
+.badge-blue{background:#dbeafe;color:#1d4ed8}
+.badge-green{background:#dcfce7;color:#15803d}
+.badge-orange{background:#ffedd5;color:#c2410c}
+.badge-purple{background:#f3e8ff;color:#7c3aed}
+.badge-pink{background:#fce7f3;color:#be185d}
+.badge-gray{background:#f3f4f6;color:#4b5563}
+.flex{display:flex}.flex-between{justify-content:space-between}.items-center{align-items:center}
+.gap-8{gap:8px}.gap-16{gap:16px}.gap-24{gap:24px}
+.mt-8{margin-top:8px}.mt-16{margin-top:16px}.mt-24{margin-top:24px}
+.mb-8{margin-bottom:8px}.mb-16{margin-bottom:16px}.mb-24{margin-bottom:24px}
+.text-secondary{color:#6b7280}.text-sm{font-size:13px}.text-xs{font-size:12px}.text-bold{font-weight:600}
+.text-purple{color:#7c3aed}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
-.tabs{display:flex;border-bottom:1px solid #f0f0f0;margin-bottom:16px}
-.tab{padding:8px 20px;cursor:pointer;border-bottom:2px solid transparent;font-size:14px;transition:all .2s}
-.tab:hover{color:#1890ff}
-.tab.active{color:#1890ff;border-bottom-color:#1890ff;font-weight:600}
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center}
-.modal{background:#fff;border-radius:8px;padding:24px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto}
-.modal h3{margin-bottom:16px}
-.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
-.empty{text-align:center;padding:40px;color:#999}
-.empty-icon{font-size:40px;margin-bottom:8px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.empty{text-align:center;padding:60px 20px;color:#9ca3af}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:.5}
+.tabs{display:flex;border-bottom:2px solid #f3f4f6;margin-bottom:20px;gap:4px}
+.tab{padding:10px 20px;cursor:pointer;border-bottom:2px solid transparent;font-size:14px;transition:all .15s;color:#6b7280;font-weight:500;margin-bottom:-2px}
+.tab:hover{color:#4f46e5}
+.tab.active{color:#4f46e5;border-bottom-color:#7c3aed;font-weight:600}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal{background:#fff;border-radius:16px;padding:28px;max-width:640px;width:92%;max-height:80vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,.15)}
+.modal h3{margin-bottom:16px;font-size:18px;color:#1a1a2e}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.input{padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;width:100%;transition:all .15s;font-family:inherit}
+.input:focus{border-color:#7c3aed;outline:none;box-shadow:0 0 0 3px rgba(124,58,237,.1)}
+textarea.input{resize:vertical;min-height:100px}
+select.input{padding:10px 14px;cursor:pointer}
+.btn{padding:9px 18px;border-radius:8px;border:1px solid #e5e7eb;cursor:pointer;font-size:14px;background:#fff;transition:all .15s;font-weight:500;font-family:inherit}
+.btn:hover{border-color:#7c3aed;color:#7c3aed}
+.btn-primary{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border-color:transparent;font-weight:600}
+.btn-primary:hover{background:linear-gradient(135deg,#4338ca,#6d28d9);color:#fff;box-shadow:0 2px 8px rgba(79,70,229,.3)}
+.btn-danger{background:#fff;border-color:#fca5a5;color:#dc2626}
+.btn-danger:hover{background:#fef2f2}
+.btn-sm{padding:5px 12px;font-size:12px}
+.timeline-item{position:relative;padding-left:28px;padding-bottom:20px;border-left:2px solid #e5e7eb}
+.timeline-item::before{content:'';position:absolute;left:-6px;top:4px;width:10px;height:10px;border-radius:50%;background:#7c3aed;border:2px solid #fff;box-shadow:0 0 0 2px #e9d5ff}
+.wiki-content{background:#fff;border-radius:12px;padding:28px;line-height:1.9;border:1px solid #f3f4f6}
+.wiki-content h1{font-size:20px;color:#4f46e5;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #f5f3ff;cursor:pointer}
+.wiki-content h2{font-size:16px;color:#7c3aed;margin:20px 0 12px}
+.chunk-item{background:#f9fafb;border-radius:8px;padding:12px 14px;margin-bottom:8px;border-left:3px solid #a78bfa;font-size:13px;line-height:1.6}
+.chunk-idx{font-size:11px;color:#7c3aed;font-weight:600;margin-bottom:4px}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #f3f4f6}
+.setting-row label{font-weight:500;color:#374151}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.status-ok{background:#22c55e}.status-err{background:#ef4444}
+.type-icons{font-size:18px}
+code{background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:12px;font-family:'SF Mono',Monaco,monospace}
+@media(max-width:768px){
+  .sidebar{width:60px;padding:8px 0}
+  .sidebar .menu-item{padding:12px 0;justify-content:center;font-size:0}
+  .sidebar .section-label{display:none}
+  .content{padding:16px}
+  .grid-4{grid-template-columns:1fr 1fr}
+  .grid-3,.grid-2{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 <div id="root">
   <div id="loading-screen">
     <div class="spinner"></div>
-    <p style="margin-top:16px">Loading Knowledge Brain...</p>
-    <p style="font-size:12px;color:#999;margin-top:8px" id="load-status">Loading core libraries...</p>
+    <p style="margin-top:8px">加载 Knowledge Brain...</p>
+    <p style="font-size:12px;color:#9ca3af;margin-top:4px" id="load-status">正在加载核心库...</p>
   </div>
 </div>
 <script>
-// 加载状态检查
-var libsLoaded = 0;
-var libNames = ['React','ReactDOM','Babel','antd','G6','echarts'];
-function checkLib(name) {
-  libsLoaded++;
-  var el = document.getElementById('load-status');
-  if (el) el.textContent = 'Loaded ' + libsLoaded + '/6: ' + name;
-}
+var libsLoaded=0,libNames=['React','ReactDOM','Babel','antd','G6','echarts'];
+function checkLib(n){libsLoaded++;var el=document.getElementById('load-status');if(el)el.textContent='已加载 '+libsLoaded+'/6: '+n;}
 </script>
-<script onload="checkLib('React')" onerror="document.getElementById('load-status').textContent='Failed to load React CDN'" src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
-<script onload="checkLib('ReactDOM')" onerror="document.getElementById('load-status').textContent='Failed to load ReactDOM CDN'" src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
-<script onload="checkLib('Babel')" onerror="document.getElementById('load-status').textContent='Failed to load Babel CDN'" src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js" crossorigin></script>
+<script onload="checkLib('React')" onerror="document.getElementById('load-status').textContent='CDN加载失败，请检查网络'" src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
+<script onload="checkLib('ReactDOM')" src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script onload="checkLib('Babel')" src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js" crossorigin></script>
 <script onload="checkLib('antd')" src="https://unpkg.com/antd@5.15.0/dist/antd.min.js" crossorigin></script>
 <script onload="checkLib('G6')" src="https://unpkg.com/@antv/g6@4.8.24/dist/g6.min.js" crossorigin></script>
 <script onload="checkLib('echarts')" src="https://unpkg.com/echarts@5.5.0/dist/echarts.min.js" crossorigin></script>
@@ -104,15 +138,27 @@ const API = '/api';
 async function apiFetch(path, opts = {}) {
   try {
     const res = await fetch(API + path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.detail || err.error || 'HTTP ' + res.status);
+    }
     return await res.json();
-  } catch (e) { console.error('API Error:', path, e); return null; }
+  } catch (e) {
+    console.error('API Error:', path, e);
+    return null;
+  }
 }
 
+const typeIcons = {file:'📄',webpage:'🌐',bookmark:'🔖',note:'📝',paper:'📰',email:'📧'};
+const typeLabels = {file:'文件',webpage:'网页',bookmark:'书签',note:'笔记',paper:'论文',email:'邮件'};
+const typeBadgeClass = {file:'badge-blue',webpage:'badge-green',bookmark:'badge-orange',note:'badge-purple',paper:'badge-pink',email:'badge-gray'};
+
 // ========== Dashboard ==========
-function DashboardPage() {
+function DashboardPage({ onNavigate }) {
   const [stats, setStats] = useState(null);
   const [timeline, setTimeline] = useState([]);
   const [tags, setTags] = useState([]);
+  const [recents, setRecents] = useState([]);
   const pieRef = useRef(null);
   const lineRef = useRef(null);
 
@@ -120,6 +166,7 @@ function DashboardPage() {
     apiFetch('/stats').then(d => d && setStats(d));
     apiFetch('/timeline?days=30').then(d => d && setTimeline(d));
     apiFetch('/tags').then(d => d && setTags(d));
+    apiFetch('/recent?limit=5').then(d => d && setRecents(d));
   }, []);
 
   useEffect(() => {
@@ -127,10 +174,10 @@ function DashboardPage() {
     const chart = echarts.init(pieRef.current);
     const byType = stats.by_type || {};
     chart.setOption({
-      title: { text: '知识类型分布', left: 'center', textStyle: { fontSize: 14 } },
-      tooltip: { trigger: 'item' },
-      color: ['#1890ff','#52c41a','#faad14','#722ed1','#eb2f96','#13c2c2'],
-      series: [{ type: 'pie', radius: ['40%','70%'], data: Object.entries(byType).map(([k,v])=>({name:k,value:v})), label: {formatter:'{b}: {c}'} }]
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      color: ['#4f46e5','#7c3aed','#ec4899','#06b6d4','#10b981','#f59e0b'],
+      series: [{ type: 'pie', radius: ['45%','72%'], data: Object.entries(byType).map(([k,v])=>({name:typeLabels[k]||k,value:v})),
+        label: {formatter:'{b}\n{c}篇',fontSize:12}, itemStyle: {borderRadius:6,borderColor:'#fff',borderWidth:2} }]
     });
     const onResize = () => chart.resize();
     window.addEventListener('resize', onResize);
@@ -141,12 +188,13 @@ function DashboardPage() {
     if (!timeline.length || !lineRef.current) return;
     const chart = echarts.init(lineRef.current);
     chart.setOption({
-      title: { text: '近30天知识增长', left: 'center', textStyle: { fontSize: 14 } },
       tooltip: { trigger: 'axis' },
-      xAxis: { type: 'category', data: timeline.map(t=>t.date), axisLabel: {rotate:45,fontSize:10} },
-      yAxis: { type: 'value', minInterval: 1 },
-      series: [{ type: 'line', data: timeline.map(t=>t.count), smooth: true, areaStyle: {opacity:0.3}, itemStyle: {color:'#1890ff'} }],
-      grid: { left: 40, right: 20, bottom: 60, top: 40 }
+      xAxis: { type: 'category', data: timeline.map(t=>t.date), axisLabel: {rotate:45,fontSize:10,color:'#6b7280'}, axisLine:{lineStyle:{color:'#e5e7eb'}} },
+      yAxis: { type: 'value', minInterval: 1, axisLabel:{color:'#6b7280'}, splitLine:{lineStyle:{color:'#f3f4f6'}} },
+      series: [{ type: 'line', data: timeline.map(t=>t.count), smooth: true,
+        areaStyle: {color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(124,58,237,.25)'},{offset:1,color:'rgba(124,58,237,.02)'}]}},
+        itemStyle:{color:'#7c3aed'}, lineStyle:{width:2.5}, symbol:'circle',symbolSize:6 }],
+      grid: { left: 40, right: 20, bottom: 60, top: 20 }
     });
     const onResize = () => chart.resize();
     window.addEventListener('resize', onResize);
@@ -154,30 +202,163 @@ function DashboardPage() {
   }, [timeline]);
 
   if (!stats) return <div className="empty"><div className="empty-icon">⏳</div><p>加载中...</p></div>;
-
-  const tagColors = ['#1890ff','#52c41a','#faad14','#722ed1','#eb2f96','#13c2c2','#f5222d','#2f54eb'];
+  const tagColors = ['#4f46e5','#7c3aed','#ec4899','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6'];
 
   return (
     <div>
+      <div className="page-title">📊 仪表盘</div>
       <div className="grid-4">
         <div className="stat-card"><div className="value">{stats.total_items}</div><div className="label">📚 知识总数</div></div>
         <div className="stat-card"><div className="value">{stats.tag_count}</div><div className="label">🏷️ 标签数</div></div>
         <div className="stat-card"><div className="value">{stats.entity_count}</div><div className="label">🔬 实体数</div></div>
         <div className="stat-card"><div className="value">{stats.topic_count}</div><div className="label">📂 主题数</div></div>
       </div>
-      <div className="grid-2 mt-16">
-        <div className="chart-box" ref={pieRef} style={{height:320}}></div>
-        <div className="chart-box" ref={lineRef} style={{height:320}}></div>
+      <div className="grid-2 mt-24">
+        <div className="chart-box" ref={pieRef} style={{height:300}}></div>
+        <div className="chart-box" ref={lineRef} style={{height:300}}></div>
       </div>
-      <div className="chart-box mt-16">
-        <h3 style={{marginBottom:12}}>🏷️ 热门标签</h3>
-        <div className="tag-cloud">
-          {tags.map((t,i) => (
-            <span key={t.id} className="tag-item" style={{background:tagColors[i%8]+'20',color:tagColors[i%8],fontSize:Math.min(12+t.count*2,22)}}>{t.name} ({t.count})</span>
+      <div className="grid-2 mt-24">
+        <div className="chart-box">
+          <h3>🏷️ 热门标签</h3>
+          <div className="tag-cloud">
+            {tags.slice(0,30).map((t,i) => (
+              <span key={t.id} className="tag-item" style={{background:tagColors[i%8]+'18',color:tagColors[i%8],fontSize:Math.min(13+t.count*1.5,22)+'px',border:'1px solid '+tagColors[i%8]+'30'}}
+                onClick={() => onNavigate && onNavigate('items', {tag: t.name})}>
+                {t.name} <span style={{opacity:.6,fontSize:'0.85em'}}>({t.count})</span>
+              </span>
+            ))}
+            {tags.length===0 && <span className="text-secondary">暂无标签</span>}
+          </div>
+        </div>
+        <div className="chart-box">
+          <h3>🕐 最近添加</h3>
+          {recents.map(r => (
+            <div key={r.id} className="card card-clickable" style={{padding:'10px 14px',marginBottom:8}} onClick={()=>onNavigate && onNavigate('items', {id: r.id})}>
+              <div className="flex flex-between items-center">
+                <span style={{fontWeight:500,fontSize:14,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:260}}>{typeIcons[r.content_type]||'📄'} {r.title||r.id?.slice(0,8)}</span>
+                <span className="text-xs text-secondary">{r.collected_at?.slice(0,10)}</span>
+              </div>
+            </div>
           ))}
-          {tags.length===0 && <span className="text-secondary">暂无标签</span>}
+          {recents.length===0 && <div className="text-secondary">暂无内容</div>}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ========== Knowledge Items ==========
+function ItemsPage({ initialId, initialTag }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [itemChunks, setItemChunks] = useState([]);
+  const [itemRelated, setItemRelated] = useState([]);
+  const [filterType, setFilterType] = useState('');
+  const [selectedTag, setSelectedTag] = useState(initialTag || '');
+
+  const loadItems = useCallback(() => {
+    setLoading(true);
+    let url = '/items?limit=100';
+    if (filterType) url += '&content_type=' + filterType;
+    apiFetch(url).then(d => { if(d) setItems(d); setLoading(false); });
+  }, [filterType]);
+
+  useEffect(() => { loadItems(); }, [loadItems]);
+  useEffect(() => { if (initialId) viewItem(initialId); }, [initialId]);
+  useEffect(() => {
+    if (selectedTag) {
+      setLoading(true);
+      apiFetch('/tags/' + encodeURIComponent(selectedTag) + '/items').then(d => { if(d) setItems(d); setLoading(false); });
+    }
+  }, [selectedTag]);
+
+  const viewItem = async (id) => {
+    const data = await apiFetch('/items/' + id);
+    if (data) {
+      setSelectedItem(data); setItemChunks([]); setItemRelated([]);
+      apiFetch('/items/' + id + '/chunks').then(d => d && setItemChunks(d));
+      apiFetch('/items/' + id + '/related').then(d => d && setItemRelated(d));
+    }
+  };
+  const deleteItem = async (id) => {
+    if (!confirm('确定删除？此操作不可恢复。')) return;
+    const result = await apiFetch('/items/' + id, {method: 'DELETE'});
+    if (result) { setSelectedItem(null); loadItems(); }
+  };
+
+  if (loading) return <div className="empty"><div className="empty-icon">⏳</div>加载中...</div>;
+
+  return (
+    <div>
+      <div className="flex flex-between items-center mb-24">
+        <div className="page-title" style={{marginBottom:0}}>📚 知识库</div>
+        <div className="flex gap-8">
+          {selectedTag && <button className="btn btn-sm" onClick={()=>{setSelectedTag('');loadItems();}}>✕ 标签: {selectedTag}</button>}
+          <select className="input" style={{width:130}} value={filterType} onChange={e=>setFilterType(e.target.value)}>
+            <option value="">全部类型</option>
+            {Object.entries(typeLabels).map(([k,v])=><option key={k} value={k}>{v}</option>)}
+          </select>
+        </div>
+      </div>
+      {selectedItem && (
+        <div className="modal-overlay" onClick={()=>setSelectedItem(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:720}}>
+            <div className="flex flex-between items-center mb-16">
+              <h3>{typeIcons[selectedItem.content_type]||'📄'} {selectedItem.title || '无标题'}</h3>
+              <button className="btn btn-danger btn-sm" onClick={()=>deleteItem(selectedItem.id)}>🗑️ 删除</button>
+            </div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <span className={"badge "+(typeBadgeClass[selectedItem.content_type]||'badge-gray')}>{typeLabels[selectedItem.content_type]||selectedItem.content_type}</span>
+              <span className="text-secondary text-sm">{selectedItem.collected_at?.slice(0,19).replace('T',' ')}</span>
+              {(selectedItem.tags||[]).map(t => <span key={t} className="badge badge-purple">{t}</span>)}
+            </div>
+            {selectedItem.summary && <div className="mt-16" style={{lineHeight:1.7,fontSize:14,color:'#374151'}}>{selectedItem.summary}</div>}
+            {selectedItem.source && <div className="mt-8 text-sm text-secondary">来源: {selectedItem.source}</div>}
+            {itemChunks.length > 0 && (
+              <div className="mt-24">
+                <h4 style={{fontSize:14,fontWeight:600,marginBottom:12}}>📄 文本分块 ({itemChunks.length})</h4>
+                {itemChunks.map(c => (
+                  <div key={c.id} className="chunk-item">
+                    <div className="chunk-idx">Chunk #{c.chunk_index}</div>
+                    {(c.content||'').slice(0, 300)}{(c.content||'').length > 300 ? '...' : ''}
+                  </div>
+                ))}
+              </div>
+            )}
+            {itemRelated.length > 0 && (
+              <div className="mt-24">
+                <h4 style={{fontSize:14,fontWeight:600,marginBottom:12}}>🔗 相关文档</h4>
+                {itemRelated.map((r,i) => (
+                  <div key={i} className="card card-clickable" style={{padding:'10px 14px',marginBottom:6}} onClick={()=>{viewItem(r.knowledge_id);}}>
+                    <span className="text-bold">{r.title || r.knowledge_id?.slice(0,8)}</span>
+                    <span className="badge badge-purple" style={{marginLeft:8}}>{r.relation_type}</span>
+                    <span className="text-secondary text-sm" style={{float:'right'}}>{typeof r.score==='number'?r.score.toFixed(3):r.score}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="modal-actions"><button className="btn" onClick={()=>setSelectedItem(null)}>关闭</button></div>
+          </div>
+        </div>
+      )}
+      <div className="grid-2">
+        {items.map(item => (
+          <div key={item.id} className="card card-clickable" onClick={()=>viewItem(item.id)}>
+            <div className="flex flex-between items-start">
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:600,fontSize:15,marginBottom:6,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                  {typeIcons[item.content_type]||'📄'} {item.title || item.id?.slice(0,8)}
+                </div>
+                {item.summary && <div className="text-secondary text-sm" style={{display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{item.summary}</div>}
+              </div>
+              <span className={"badge "+(typeBadgeClass[item.content_type]||'badge-gray')} style={{marginLeft:8,flexShrink:0}}>{typeLabels[item.content_type]||item.content_type}</span>
+            </div>
+            <div className="text-xs text-secondary mt-8">{item.collected_at?.slice(0,10)}</div>
+          </div>
+        ))}
+      </div>
+      {items.length===0 && <div className="empty"><div className="empty-icon">📭</div><p>{selectedTag ? `标签"${selectedTag}"下暂无内容` : '暂无知识条目'}</p></div>}
     </div>
   );
 }
@@ -189,96 +370,80 @@ function GraphPage() {
   const [loading, setLoading] = useState(true);
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [stats, setStats] = useState(null);
   const entityTypes = ['all','person','concept','tool','project','organization'];
+  const typeColors = {person:'#ef4444',concept:'#4f46e5',tool:'#10b981',project:'#7c3aed',organization:'#f59e0b'};
+  const typeIconsG = {person:'👤',concept:'💡',tool:'🔧',project:'📋',organization:'🏢'};
+  const typeLabelsG = {person:'人物',concept:'概念',tool:'工具',project:'项目',organization:'组织'};
 
   const loadGraph = useCallback((entityType) => {
     setLoading(true);
     const url = entityType && entityType!=='all' ? '/graph?entity_type='+entityType+'&limit=200' : '/graph?limit=200';
-    apiFetch(url).then(data => {
-      if (data && data.nodes) renderGraph(data);
-      setLoading(false);
-    });
+    apiFetch(url).then(data => { if (data) { renderGraph(data); setStats(data.stats); } setLoading(false); });
   }, []);
-
   useEffect(() => { loadGraph('all'); }, [loadGraph]);
 
   function renderGraph(data) {
     if (!containerRef.current) return;
     if (graphRef.current) { try{graphRef.current.destroy();}catch(e){} }
-
-    const typeColors = {person:'#f5222d',concept:'#1890ff',tool:'#52c41a',project:'#722ed1',organization:'#faad14'};
-    const typeIcons = {person:'👤',concept:'💡',tool:'🔧',project:'📋',organization:'🏢'};
-
     const nodes = data.nodes.map(n => ({
-      id: String(n.id),
-      label: (typeIcons[n.type]||'')+' '+(n.display_name||n.name),
-      size: Math.max(30, Math.min(80, 20+(n.mention_count||1)*8)),
-      style: { fill: typeColors[n.type]||'#1890ff', stroke: '#fff', lineWidth: 2 },
-      labelCfg: { style: { fill: '#333', fontSize: 11 }, position: 'bottom' },
-      entityData: n
+      id: String(n.id), label: (typeIconsG[n.type]||'')+' '+(n.display_name||n.name),
+      size: Math.max(28, Math.min(70, 18+(n.mention_count||1)*7)),
+      style: { fill: typeColors[n.type]||'#4f46e5', stroke: '#fff', lineWidth: 2 },
+      labelCfg: { style: { fill: '#374151', fontSize: 11 }, position: 'bottom' }, entityData: n
     }));
-
     const edges = data.edges.map(e => ({
-      source: String(e.source_entity_id),
-      target: String(e.target_entity_id),
-      label: e.relation_type,
-      style: { stroke: '#ccc', lineWidth: 1.5, endArrow: true },
-      labelCfg: { style: { fill: '#999', fontSize: 9 }, autoRotate: true }
+      source: String(e.source_entity_id), target: String(e.target_entity_id), label: e.relation_type,
+      style: { stroke: '#d1d5db', lineWidth: 1.2, endArrow: true }, labelCfg: { style: { fill: '#9ca3af', fontSize: 9 }, autoRotate: true }
     }));
-
     const graph = new G6.Graph({
-      container: containerRef.current,
-      width: containerRef.current.offsetWidth,
-      height: 600,
+      container: containerRef.current, width: containerRef.current.offsetWidth, height: 620,
       modes: { default: ['drag-canvas','zoom-canvas','drag-node'] },
-      layout: { type: 'force', preventOverlap: true, nodeSize: 80, linkDistance: 180, nodeStrength: -400 },
-      defaultNode: { type: 'circle', style: { lineWidth: 2 } },
-      defaultEdge: { type: 'quadratic' },
+      layout: { type: 'force', preventOverlap: true, nodeSize: 60, linkDistance: 160, nodeStrength: -350, edgeStrength: 0.3 },
+      defaultNode: { type: 'circle' }, defaultEdge: { type: 'quadratic' },
     });
-
-    graph.data({ nodes, edges });
-    graph.render();
-
-    graph.on('node:click', (evt) => {
-      const model = evt.item.getModel();
-      if (model.entityData) setSelectedEntity(model.entityData);
-    });
-
+    graph.data({ nodes, edges }); graph.render();
+    graph.on('node:click', (evt) => { const m = evt.item.getModel(); if (m.entityData) fetchEntityDetail(m.entityData.id); });
     graphRef.current = graph;
-
-    const onResize = () => {
-      if (graphRef.current && containerRef.current)
-        graphRef.current.changeSize(containerRef.current.offsetWidth, 600);
-    };
+    const onResize = () => { if (graphRef.current && containerRef.current) graphRef.current.changeSize(containerRef.current.offsetWidth, 620); };
     window.addEventListener('resize', onResize);
   }
-
-  const expandEntity = async (entityId) => {
-    setLoading(true);
-    const data = await apiFetch('/graph?entity_id='+entityId+'&depth=2&limit=50');
-    if (data && data.nodes) renderGraph(data);
-    setLoading(false);
-  };
+  const fetchEntityDetail = async (entityId) => { const d = await apiFetch('/graph/entity/' + entityId); if (d) setSelectedEntity(d); };
+  const expandEntity = async (entityId) => { setLoading(true); setSelectedEntity(null); const d = await apiFetch('/graph?entity_id='+entityId+'&depth=2&limit=50'); if (d?.nodes) renderGraph(d); setLoading(false); };
 
   return (
     <div>
-      <div className="flex gap-8 mb-16 items-center">
-        <select className="input" style={{width:160}} value={filter} onChange={e=>{setFilter(e.target.value);loadGraph(e.target.value)}}>
-          {entityTypes.map(t=><option key={t} value={t}>{t==='all'?'全部类型':t}</option>)}
+      <div className="page-title">🕸️ 知识图谱</div>
+      <div className="flex gap-8 mb-16 items-center flex-wrap">
+        <select className="input" style={{width:140}} value={filter} onChange={e=>{setFilter(e.target.value);loadGraph(e.target.value);}}>
+          {entityTypes.map(t=><option key={t} value={t}>{t==='all'?'全部类型':typeLabelsG[t]||t}</option>)}
         </select>
-        <span className="text-secondary text-sm">💡 拖拽节点/画布 · 滚轮缩放 · 点击节点查看详情</span>
+        {stats && <span className="text-secondary text-sm">共 {stats.total_entities} 实体 · {stats.total_relations} 关系</span>}
       </div>
-      {loading && <div className="empty" style={{padding:20}}><div className="empty-icon">⏳</div>加载图谱中...</div>}
+      {loading && <div className="empty" style={{padding:30}}><div className="empty-icon">⏳</div>加载中...</div>}
       <div id="graph-container" ref={containerRef} style={{display:loading?'none':'block'}}></div>
       {selectedEntity && (
         <div className="modal-overlay" onClick={()=>setSelectedEntity(null)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
-            <h3>{selectedEntity.display_name}</h3>
-            <div className="mb-16"><span className="badge badge-blue">{selectedEntity.type}</span></div>
-            <p>{selectedEntity.description}</p>
-            <p className="mt-8 text-secondary">提及次数: {selectedEntity.mention_count}</p>
+            <h3>{typeIconsG[selectedEntity.type]||''} {selectedEntity.display_name}</h3>
+            <div className="mb-16"><span className="badge" style={{background:typeColors[selectedEntity.type]+'20',color:typeColors[selectedEntity.type]}}>{typeLabelsG[selectedEntity.type]||selectedEntity.type}</span> <span className="text-sm text-secondary">提及 {selectedEntity.mention_count} 次</span></div>
+            {selectedEntity.description && <p style={{lineHeight:1.7}}>{selectedEntity.description}</p>}
+            {selectedEntity.mentions?.length > 0 && (
+              <div className="mt-16"><div className="text-bold mb-8">📎 出现于：</div>
+                {selectedEntity.mentions.slice(0,5).map((m,i)=>(<div key={i} className="text-sm text-secondary" style={{padding:'3px 0'}}>• {m.title || m.knowledge_id?.slice(0,8)}</div>))}
+              </div>
+            )}
+            {selectedEntity.relations?.length > 0 && (
+              <div className="mt-16"><div className="text-bold mb-8">🔗 相关实体：</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                  {selectedEntity.relations.slice(0,15).map((r,i)=>(
+                    <span key={i} className="badge badge-gray" style={{cursor:'pointer'}} onClick={()=>{setSelectedEntity(null);expandEntity(r.related_id);}}>{r.related_name}</span>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="modal-actions">
-              <button className="btn btn-primary" onClick={()=>{expandEntity(selectedEntity.id);setSelectedEntity(null)}}>🔗 展开关系</button>
+              <button className="btn btn-primary" onClick={()=>expandEntity(selectedEntity.id)}>🔗 展开N-hop</button>
               <button className="btn" onClick={()=>setSelectedEntity(null)}>关闭</button>
             </div>
           </div>
@@ -291,75 +456,63 @@ function GraphPage() {
 // ========== Topics ==========
 function TopicsPage() {
   const [topics, setTopics] = useState([]);
+  const [rebuilding, setRebuilding] = useState(false);
+  const [selectedTopicDocs, setSelectedTopicDocs] = useState(null);
   const chartRef = useRef(null);
-
-  useEffect(() => {
-    apiFetch('/topics').then(d => d && setTopics(d));
-  }, []);
-
+  useEffect(() => { apiFetch('/topics').then(d => d && setTopics(d)); }, []);
   useEffect(() => {
     if (!topics.length || !chartRef.current) return;
     const chart = echarts.init(chartRef.current);
-    const data = topics.map(t=>({name:t.label,value:t.document_count}));
-    chart.setOption({
-      title: { text: '主题聚类旭日图', left: 'center', textStyle: {fontSize:14} },
-      tooltip: { formatter: p => p.name+': '+p.value+' 篇' },
-      color: ['#1890ff','#52c41a','#faad14','#722ed1','#eb2f96','#13c2c2','#f5222d'],
-      series: [{ type: 'sunburst', radius: ['10%','90%'], data, label: {rotate:'radial',fontSize:11} }]
-    });
+    chart.setOption({ tooltip: { formatter: p => p.name+': '+p.value+' 篇' },
+      color: ['#4f46e5','#7c3aed','#ec4899','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6'],
+      series: [{ type: 'treemap', roam: false, breadcrumb: {show:false}, data: topics.map(t=>({name:t.label,value:t.document_count})),
+        label: {show:true,formatter:'{b}\n{c}篇',fontSize:12}, itemStyle:{borderColor:'#fff',borderWidth:2,gapWidth:3} }] });
     const onResize = () => chart.resize();
     window.addEventListener('resize', onResize);
     return () => { window.removeEventListener('resize', onResize); chart.dispose(); };
   }, [topics]);
 
+  const rebuild = async () => {
+    setRebuilding(true);
+    await apiFetch('/topics/rebuild', {method:'POST'});
+    alert('✅ 主题重建已在后台启动，请稍后刷新');
+    setRebuilding(false);
+    setTimeout(() => apiFetch('/topics').then(d => d && setTopics(d)), 5000);
+  };
+  const viewTopicDocs = async (cid) => { const d = await apiFetch('/topics/'+cid+'/documents?limit=50'); setSelectedTopicDocs(d||[]); };
+
   return (
     <div>
-      <div className="flex flex-between items-center mb-16">
-        <h2>📂 主题聚类</h2>
-        <button className="btn btn-primary" onClick={()=>{apiFetch('/topics/rebuild',{method:'POST'});alert('主题重建已触发')}}>🔄 重建主题</button>
+      <div className="flex flex-between items-center mb-24">
+        <div className="page-title" style={{marginBottom:0}}>📂 主题聚类</div>
+        <button className="btn btn-primary" onClick={rebuild} disabled={rebuilding}>{rebuilding?'⏳ 重建中...':'🔄 重建主题'}</button>
       </div>
-      <div className="chart-box" ref={chartRef} style={{height:400}}></div>
-      <div className="grid-3 mt-16">
+      <div className="chart-box" ref={chartRef} style={{height:380}}></div>
+      <div className="grid-3 mt-24">
         {topics.map(t=>(
-          <div className="card" key={t.id}>
+          <div className="card card-clickable" key={t.id} onClick={()=>viewTopicDocs(t.id)}>
             <div className="flex flex-between items-center">
-              <strong>{t.label}</strong>
-              <span className="badge badge-blue">{t.document_count} 篇</span>
+              <strong style={{fontSize:15}}>{t.label}</strong>
+              <span className="badge badge-purple">{t.document_count} 篇</span>
             </div>
             <p className="text-secondary text-sm mt-8">{t.description}</p>
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-// ========== Timeline ==========
-function TimelinePage() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const typeIcons = {file:'📄',webpage:'🌐',bookmark:'🔖',note:'📝',paper:'📰',email:'📧'};
-
-  useEffect(() => {
-    apiFetch('/items?limit=50').then(d => { if(d) setItems(d); setLoading(false); });
-  }, []);
-
-  if (loading) return <div className="empty"><div className="empty-icon">⏳</div>加载中...</div>;
-
-  return (
-    <div>
-      <h2 className="mb-16">📅 知识时间线</h2>
-      {items.length===0 && <div className="empty"><div className="empty-icon">📭</div>暂无知识</div>}
-      {items.map(item=>(
-        <div className="timeline-item" key={item.id}>
-          <div className="flex flex-between">
-            <strong>{typeIcons[item.content_type]||'📄'} {item.title||item.id?.slice(0,8)}</strong>
-            <span className="text-secondary text-sm">{item.collected_at?.slice(0,10)}</span>
+      {topics.length===0 && <div className="empty"><div className="empty-icon">📂</div>暂无主题，添加文档后点击"重建主题"</div>}
+      {selectedTopicDocs !== null && (
+        <div className="modal-overlay" onClick={()=>setSelectedTopicDocs(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <h3>📂 主题文档 ({selectedTopicDocs.length})</h3>
+            {selectedTopicDocs.map(d=>(
+              <div key={d.id} className="card" style={{padding:'10px 14px',marginBottom:6}}>
+                {typeIcons[d.content_type]||'📄'} <strong>{d.title||d.id?.slice(0,8)}</strong>
+              </div>
+            ))}
+            <div className="modal-actions"><button className="btn" onClick={()=>setSelectedTopicDocs(null)}>关闭</button></div>
           </div>
-          {item.summary && <p className="text-secondary text-sm mt-8" style={{maxWidth:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.summary}</p>}
-          <span className="badge badge-blue mt-8" style={{display:'inline-block'}}>{item.content_type}</span>
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -371,14 +524,16 @@ function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState('rag');
   const [query, setQuery] = useState('');
+  const [sessionId, setSessionId] = useState(null);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
     setLoading(true); setAnswer(''); setResults([]);
     try {
-      if (mode === 'rag') {
-        const d = await apiFetch('/search/rag', {method:'POST',body:JSON.stringify({query,top_k:5})});
-        if (d) { setAnswer(d.answer||''); setResults(d.sources||[]); }
+      if (mode === 'rag' || mode === 'pipeline') {
+        const ep = mode === 'rag' ? '/search/rag' : '/search/pipeline';
+        const d = await apiFetch(ep, {method:'POST',body:JSON.stringify({query,top_k:8,session_id:sessionId})});
+        if (d) { setAnswer(d.answer||''); setResults(d.sources||[]); if(d.session_id) setSessionId(d.session_id); }
       } else if (mode === 'semantic') {
         const d = await apiFetch('/search/semantic', {method:'POST',body:JSON.stringify({query,top_k:10})});
         if (d) setResults(d);
@@ -386,39 +541,105 @@ function SearchPage() {
         const d = await apiFetch('/search/keyword?q='+encodeURIComponent(query)+'&limit=20');
         if (d) setResults(d);
       }
-    } catch(e) { alert('搜索失败'); }
+    } catch(e) { alert('搜索失败: '+e.message); }
     setLoading(false);
   };
 
   return (
     <div>
-      <div className="search-box">
+      <div className="page-title">🔍 智能搜索</div>
+      <div className="search-container">
         <div className="tabs">
-          {[{k:'rag',l:'🤖 RAG问答'},{k:'semantic',l:'🔍 语义搜索'},{k:'keyword',l:'📝 关键词搜索'}].map(t=>(
-            <div key={t.k} className={'tab'+(mode===t.k?' active':'')} onClick={()=>setMode(t.k)}>{t.l}</div>
+          {[{k:'rag',l:'🤖 RAG问答'},{k:'pipeline',l:'⚡ 增强管道'},{k:'semantic',l:'🔍 语义搜索'},{k:'keyword',l:'📝 关键词'}].map(t=>(
+            <div key={t.k} className={'tab'+(mode===t.k?' active':'')} onClick={()=>{setMode(t.k);setAnswer('');setResults([]);}}>{t.l}</div>
           ))}
         </div>
         <div className="flex gap-8">
-          <input className="input" placeholder="输入问题或关键词..." value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSearch()} />
+          <input className="input" placeholder={mode==='rag'||mode==='pipeline'?'输入您的问题...':'输入搜索关键词...'} value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSearch()} />
+          {(mode==='rag'||mode==='pipeline') && sessionId && <button className="btn btn-sm" onClick={()=>{setSessionId(null);setAnswer('');setResults([]);}} title="新会话">🔄</button>}
           <button className="btn btn-primary" onClick={handleSearch} disabled={loading}>{loading?'搜索中...':'搜索'}</button>
         </div>
       </div>
-      {answer && (
-        <div className="chart-box mb-16">
-          <h3>📖 AI 回答</h3>
-          <p style={{whiteSpace:'pre-wrap',lineHeight:1.8,marginTop:12}}>{answer}</p>
-        </div>
-      )}
-      {results.map((r,i)=>(
-        <div className="result-item" key={i}>
-          <div className="flex flex-between items-center">
-            <h4>{r.metadata?.title||r.id?.slice(0,8)||('结果 '+(i+1))}</h4>
-            {r.score!=null && <span className="score-badge">{typeof r.score==='number'?r.score.toFixed(3):r.score}</span>}
+      {answer && <div className="answer-box"><h3>🤖 AI 回答</h3><div className="answer-content">{answer}</div></div>}
+      <div style={{maxWidth:720,margin:'0 auto'}}>
+        {results.map((r,i)=>(
+          <div className="result-item" key={i}>
+            <div className="flex flex-between items-center">
+              <h4>{typeIcons[r.metadata?.content_type]||''} {r.metadata?.title || r.id?.slice(0,8) || ('结果 '+(i+1))}</h4>
+              {r.score!=null && <span className="score-badge">{typeof r.score==='number'?r.score.toFixed(3):r.score}</span>}
+            </div>
+            <p className="text-secondary text-sm mt-8" style={{lineHeight:1.6}}>{(r.content||'').slice(0,300)}{(r.content||'').length>300?'...':''}</p>
           </div>
-          <p className="text-secondary text-sm mt-8">{(r.content||'').slice(0,200)}</p>
-        </div>
-      ))}
-      {!loading && !answer && results.length===0 && <div className="empty"><div className="empty-icon">🔍</div>搜索知识库</div>}
+        ))}
+      </div>
+      {!loading && !answer && results.length===0 && <div className="empty"><div className="empty-icon">🔍</div>输入问题或关键词搜索知识库</div>}
+    </div>
+  );
+}
+
+// ========== Add Content ==========
+function AddPage() {
+  const [mode, setMode] = useState('note');
+  const [noteText, setNoteText] = useState('');
+  const [noteTitle, setNoteTitle] = useState('');
+  const [urlVal, setUrlVal] = useState('');
+  const [tags, setTags] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const submitNote = async () => {
+    if (!noteText.trim()) { alert('请输入笔记内容'); return; }
+    setSubmitting(true);
+    const r = await apiFetch('/collect/note', {method:'POST',body:JSON.stringify({text:noteText,title:noteTitle||null,tags:tags.split(',').map(t=>t.trim()).filter(Boolean)})});
+    setSubmitting(false);
+    if (r?.success) { alert(r.duplicate?'⚠️ 已存在':'✅ 笔记添加成功！'); setNoteText(''); setNoteTitle(''); setTags(''); }
+    else alert('添加失败');
+  };
+  const submitUrl = async () => {
+    if (!urlVal.trim()) { alert('请输入URL'); return; }
+    setSubmitting(true);
+    const r = await apiFetch('/collect/webpage', {method:'POST',body:JSON.stringify({url:urlVal,tags:tags.split(',').map(t=>t.trim()).filter(Boolean)})});
+    setSubmitting(false);
+    if (r?.success) { alert(r.duplicate?'⚠️ 已存在':'✅ 网页采集成功！'); setUrlVal(''); setTags(''); }
+    else alert('采集失败');
+  };
+
+  return (
+    <div style={{maxWidth:640,margin:'0 auto'}}>
+      <div className="page-title">➕ 添加知识</div>
+      <div className="tabs">
+        <div className={'tab'+(mode==='note'?' active':'')} onClick={()=>setMode('note')}>📝 笔记</div>
+        <div className={'tab'+(mode==='webpage'?' active':'')} onClick={()=>setMode('webpage')}>🌐 网页</div>
+      </div>
+      <div className="chart-box">
+        {mode === 'note' ? (
+          <div>
+            <div style={{marginBottom:14}}><label className="text-sm text-bold" style={{display:'block',marginBottom:6}}>标题</label>
+              <input className="input" placeholder="给笔记起个标题（可选）" value={noteTitle} onChange={e=>setNoteTitle(e.target.value)} /></div>
+            <div style={{marginBottom:14}}><label className="text-sm text-bold" style={{display:'block',marginBottom:6}}>内容</label>
+              <textarea className="input" rows={8} placeholder="输入笔记内容..." value={noteText} onChange={e=>setNoteText(e.target.value)} /></div>
+            <div style={{marginBottom:14}}><label className="text-sm text-bold" style={{display:'block',marginBottom:6}}>标签</label>
+              <input className="input" placeholder="逗号分隔，如: AI, 技术" value={tags} onChange={e=>setTags(e.target.value)} /></div>
+            <button className="btn btn-primary" onClick={submitNote} disabled={submitting} style={{width:'100%'}}>{submitting?'提交中...':'💾 保存笔记'}</button>
+          </div>
+        ) : (
+          <div>
+            <div style={{marginBottom:14}}><label className="text-sm text-bold" style={{display:'block',marginBottom:6}}>网页URL</label>
+              <input className="input" placeholder="https://..." value={urlVal} onChange={e=>setUrlVal(e.target.value)} /></div>
+            <div style={{marginBottom:14}}><label className="text-sm text-bold" style={{display:'block',marginBottom:6}}>标签</label>
+              <input className="input" placeholder="逗号分隔（可选）" value={tags} onChange={e=>setTags(e.target.value)} /></div>
+            <button className="btn btn-primary" onClick={submitUrl} disabled={submitting} style={{width:'100%'}}>{submitting?'采集中...':'🌐 采集网页'}</button>
+          </div>
+        )}
+      </div>
+      <div className="chart-box mt-16">
+        <h3>💡 使用提示</h3>
+        <ul style={{paddingLeft:20,lineHeight:2,color:'#6b7280',fontSize:13}}>
+          <li>CLI采集文件: <code>kbrain collect file /path/to/file.pdf</code></li>
+          <li>支持 PDF / Markdown / TXT / RST 文件</li>
+          <li>采集后自动进行: 分块→向量化→实体抽取→关系构建</li>
+          <li>运行 <code>kbrain mine</code> 可手动触发全量挖掘和百科生成</li>
+        </ul>
+      </div>
     </div>
   );
 }
@@ -428,38 +649,43 @@ function WikiPage() {
   const [topics, setTopics] = useState([]);
   const [articles, setArticles] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
-
   useEffect(() => { apiFetch('/topics').then(d=>d&&setTopics(d)); }, []);
-
-  const selectTopic = async (topicId) => {
-    setSelectedTopic(topicId);
-    const data = await apiFetch('/wiki/articles/'+topicId);
-    if (data) setArticles(data);
+  const selectTopic = async (tid) => { setSelectedTopic(tid); const d = await apiFetch('/wiki/articles/'+tid); if(d) setArticles(d); };
+  const renderContent = (c) => {
+    if (!c) return '';
+    return c.replace(/\[\[([^\]]+)\]\]/g, '<a style="color:#4f46e5;border-bottom:1px dashed #c4b5fd">$1</a>')
+            .replace(/^# (.+)$/gm, '<h1 style="font-size:20px;color:#4f46e5;margin:16px 0 8px">$1</h1>')
+            .replace(/^## (.+)$/gm, '<h2 style="font-size:16px;color:#7c3aed;margin:14px 0 8px">$2</h2>'.replace('$2','$1'))
+            .replace(/^- (.+)$/gm, '<li style="margin-left:20px">$1</li>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>');
   };
 
   return (
     <div>
-      <h2 className="mb-16">📚 知识百科</h2>
-      <div style={{display:'grid',gridTemplateColumns:'200px 1fr',gap:16}}>
-        <div className="card" style={{padding:0,overflow:'hidden'}}>
-          <div style={{padding:'12px 16px',borderBottom:'1px solid #f0f0f0',fontWeight:600}}>主题列表</div>
+      <div className="page-title">📚 知识百科</div>
+      <div style={{display:'grid',gridTemplateColumns:'220px 1fr',gap:20}}>
+        <div className="chart-box" style={{padding:0,overflow:'hidden',alignSelf:'start',position:'sticky',top:84}}>
+          <div style={{padding:'14px 16px',borderBottom:'1px solid #f3f4f6',fontWeight:600,fontSize:14}}>主题列表</div>
           {topics.map(t=>(
-            <div key={t.id} style={{padding:'10px 16px',cursor:'pointer',background:selectedTopic===t.id?'#e6f7ff':'transparent',borderLeft:selectedTopic===t.id?'3px solid #1890ff':'3px solid transparent'}}
-                 onClick={()=>selectTopic(t.id)}>
-              {t.label} <span className="badge badge-blue" style={{float:'right'}}>{t.document_count}</span>
+            <div key={t.id} style={{padding:'10px 16px',cursor:'pointer',background:selectedTopic===t.id?'#f5f3ff':'transparent',borderLeft:selectedTopic===t.id?'3px solid #7c3aed':'3px solid transparent'}} onClick={()=>selectTopic(t.id)}>
+              <div style={{fontSize:14,fontWeight:selectedTopic===t.id?600:400,color:selectedTopic===t.id?'#4f46e5':'#374151',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.label}</div>
+              <span className="badge badge-purple" style={{fontSize:11,marginTop:4}}>{t.document_count} 篇</span>
             </div>
           ))}
-          {topics.length===0 && <div className="text-secondary" style={{padding:16}}>暂无主题</div>}
+          {topics.length===0 && <div className="text-secondary" style={{padding:16,fontSize:13}}>暂无主题</div>}
         </div>
         <div>
           {articles.map(a=>(
             <div className="wiki-content mb-16" key={a.article_id}>
               <h3>{a.title}</h3>
-              <div style={{marginTop:12}} dangerouslySetInnerHTML={{__html:(a.content||'').replace(/\[\[([^\]]+)\]\]/g,'<a href="javascript:void(0)">$1</a>').replace(/\n/g,'<br/>')}} />
+              {a.entity_summary && <div className="text-sm text-purple mt-8"><strong>核心实体：</strong>{a.entity_summary}</div>}
+              <div className="text-xs text-secondary mt-8">{a.compiled_at?.slice(0,19).replace('T',' ')}</div>
+              <div style={{marginTop:12,fontSize:14,color:'#374151'}} dangerouslySetInnerHTML={{__html: renderContent(a.content)}} />
             </div>
           ))}
           {!selectedTopic && <div className="empty"><div className="empty-icon">📚</div>选择左侧主题查看百科</div>}
-          {selectedTopic && articles.length===0 && <div className="empty"><div className="empty-icon">📝</div>该主题暂无百科文章</div>}
+          {selectedTopic && articles.length===0 && <div className="empty"><div className="empty-icon">📝</div>该主题暂无百科文章，请运行主题重建</div>}
         </div>
       </div>
     </div>
@@ -470,31 +696,30 @@ function WikiPage() {
 function BackupPage() {
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const loadBackups = () => { apiFetch('/backup/list').then(d=>d&&setBackups(d)); };
   useEffect(loadBackups, []);
-
   const createBackup = async () => {
-    setLoading(true);
-    await apiFetch('/backup/create', {method:'POST'});
-    alert('✅ 备份创建成功');
-    loadBackups();
-    setLoading(false);
+    setLoading(true); const r = await apiFetch('/backup/create', {method:'POST'});
+    if (r) alert('✅ 备份创建成功'); loadBackups(); setLoading(false);
   };
+  const deleteBackup = async (name) => { if(!confirm('删除备份 '+name+'?'))return; await apiFetch('/backup/'+encodeURIComponent(name),{method:'DELETE'}); loadBackups(); };
+  const fmtSize = (b) => { if(b<1024)return b+' B'; if(b<1048576)return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(2)+' MB'; };
 
   return (
-    <div>
+    <div style={{maxWidth:700,margin:'0 auto'}}>
+      <div className="page-title">💾 备份管理</div>
       <div className="flex flex-between items-center mb-16">
-        <h2>💾 备份管理</h2>
-        <button className="btn btn-primary" onClick={createBackup} disabled={loading}>{loading?'备份中...':'创建备份'}</button>
+        <p className="text-secondary">备份包含数据库、向量索引和采集文件</p>
+        <button className="btn btn-primary" onClick={createBackup} disabled={loading}>{loading?'备份中...':'➕ 创建备份'}</button>
       </div>
-      <div className="card">
+      <div className="chart-box">
         {backups.map((b,i)=>(
-          <div key={i} style={{padding:'12px 0',borderBottom:'1px solid #f0f0f0'}} className="flex flex-between items-center">
-            <span>{b.name}</span>
+          <div key={i} style={{padding:'14px 0',borderBottom:i<backups.length-1?'1px solid #f3f4f6':'none'}} className="flex flex-between items-center">
+            <div><div style={{fontWeight:500}}>📦 {b.name}</div><div className="text-xs text-secondary mt-4">{b.created?.slice(0,19).replace('T',' ')}</div></div>
             <div className="flex gap-8 items-center">
-              <span className="badge badge-green">{(b.size/1024).toFixed(1)} KB</span>
-              <span className="text-secondary text-sm">{b.created?.slice(0,19)}</span>
+              <span className="badge badge-green">{fmtSize(b.size)}</span>
+              <a href={"/api/backup/download/"+encodeURIComponent(b.name)} className="btn btn-sm" download>⬇️</a>
+              <button className="btn btn-danger btn-sm" onClick={()=>deleteBackup(b.name)}>🗑️</button>
             </div>
           </div>
         ))}
@@ -504,46 +729,142 @@ function BackupPage() {
   );
 }
 
-// ========== Main App ==========
-function App() {
-  const [page, setPage] = useState('dashboard');
-
-  const menuItems = [
-    {key:'dashboard',icon:'📊',label:'仪表盘'},
-    {key:'graph',icon:'🕸️',label:'知识图谱'},
-    {key:'topics',icon:'📂',label:'主题地图'},
-    {key:'timeline',icon:'📅',label:'时间线'},
-    {key:'search',icon:'🔍',label:'搜索'},
-    {key:'wiki',icon:'📚',label:'百科'},
-    {key:'backup',icon:'💾',label:'备份'},
-  ];
-
-  const pages = {dashboard:DashboardPage,graph:GraphPage,topics:TopicsPage,timeline:TimelinePage,search:SearchPage,wiki:WikiPage,backup:BackupPage};
-  const CurrentPage = pages[page] || DashboardPage;
+// ========== Settings ==========
+function SettingsPage() {
+  const [config, setConfig] = useState(null);
+  const [services, setServices] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({emb_api:'',llm_api:'',llm_provider:'dashscope',emb_provider:'dashscope',backup_enabled:false});
+  useEffect(() => {
+    apiFetch('/settings').then(d => { if(d) { setConfig(d); setForm(f=>({...f,llm_provider:d.llm?.provider||'dashscope',emb_provider:d.embedding?.provider||'dashscope',backup_enabled:d.backup?.enabled||false})); }});
+    apiFetch('/settings/services').then(d => d && setServices(d));
+  }, []);
+  const save = async () => {
+    setSaving(true);
+    const body = {};
+    if (form.emb_api) body.embedding_api_key = form.emb_api;
+    if (form.llm_api) body.llm_api_key = form.llm_api;
+    body.llm_provider = form.llm_provider;
+    body.embedding_provider = form.emb_provider;
+    body.backup_enabled = form.backup_enabled;
+    const r = await apiFetch('/settings', {method:'POST',body:JSON.stringify(body)});
+    setSaving(false);
+    if (r?.success) { alert('✅ 设置已保存'); apiFetch('/settings/services').then(d=>d&&setServices(d)); }
+  };
 
   return (
-    <div>
-      <div className="app-header">
-        <h1>🧠 Knowledge Brain</h1>
-        <span className="subtitle">个人知识大脑系统</span>
+    <div style={{maxWidth:640,margin:'0 auto'}}>
+      <div className="page-title">⚙️ 设置</div>
+      <div className="chart-box mb-24">
+        <h3>🔌 服务状态</h3>
+        <div className="setting-row"><span>向量嵌入服务</span><span><span className={"status-dot "+(services.embedding_available?"status-ok":"status-err")}></span>{services.embedding_available?'已配置':'未配置'}</span></div>
+        <div className="setting-row"><span>LLM 问答服务</span><span><span className={"status-dot "+(services.llm_available?"status-ok":"status-err")}></span>{services.llm_available?'已配置':'未配置'}</span></div>
       </div>
-      <div className="main-layout">
-        <div className="sidebar">
-          {menuItems.map(item=>(
-            <div key={item.key} className={'menu-item'+(page===item.key?' active':'')} onClick={()=>setPage(item.key)}>
-              {item.icon} {item.label}
-            </div>
-          ))}
-        </div>
-        <div className="content">
-          <CurrentPage />
+      <div className="chart-box mb-24">
+        <h3>🔑 API 密钥配置</h3>
+        <p className="text-sm text-secondary mb-16">密钥保存在本地配置文件中</p>
+        <div style={{marginBottom:14}}><label className="text-sm text-bold" style={{display:'block',marginBottom:6}}>嵌入服务</label>
+          <select className="input" value={form.emb_provider} onChange={e=>setForm({...form,emb_provider:e.target.value})}>
+            <option value="dashscope">DashScope（通义千问）</option><option value="openai">OpenAI</option><option value="openai_compatible">OpenAI兼容</option>
+          </select></div>
+        <div style={{marginBottom:14}}><label className="text-sm text-bold" style={{display:'block',marginBottom:6}}>嵌入 API Key{config?.embedding?.api_key==='***'?'（已配置）':''}</label>
+          <input className="input" type="password" placeholder="sk-..." value={form.emb_api} onChange={e=>setForm({...form,emb_api:e.target.value})} /></div>
+        <div style={{marginBottom:14}}><label className="text-sm text-bold" style={{display:'block',marginBottom:6}}>LLM 服务</label>
+          <select className="input" value={form.llm_provider} onChange={e=>setForm({...form,llm_provider:e.target.value})}>
+            <option value="dashscope">DashScope（通义千问）</option><option value="openai">OpenAI</option><option value="openai_compatible">OpenAI兼容</option>
+          </select></div>
+        <div style={{marginBottom:14}}><label className="text-sm text-bold" style={{display:'block',marginBottom:6}}>LLM API Key{config?.llm?.api_key==='***'?'（已配置）':''}</label>
+          <input className="input" type="password" placeholder="sk-..." value={form.llm_api} onChange={e=>setForm({...form,llm_api:e.target.value})} /></div>
+        <div className="setting-row"><label>启用每日自动备份</label><input type="checkbox" checked={form.backup_enabled} onChange={e=>setForm({...form,backup_enabled:e.target.checked})} style={{width:18,height:18}} /></div>
+        <button className="btn btn-primary mt-24" onClick={save} disabled={saving} style={{width:'100%'}}>{saving?'保存中...':'💾 保存设置'}</button>
+      </div>
+      <div className="chart-box">
+        <h3>ℹ️ 关于</h3>
+        <div className="text-sm" style={{lineHeight:2,color:'#6b7280'}}>
+          <div><strong>Knowledge Brain</strong> v0.2.0</div>
+          <div>数据目录: {config?.data_dir || '~/.knowledge-brain'}</div>
         </div>
       </div>
     </div>
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+// ========== Timeline ==========
+function TimelinePage() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { apiFetch('/items?limit=100').then(d => { if(d) setItems(d); setLoading(false); }); }, []);
+  if (loading) return <div className="empty"><div className="empty-icon">⏳</div>加载中...</div>;
+  return (
+    <div style={{maxWidth:700,margin:'0 auto'}}>
+      <div className="page-title">📅 时间线</div>
+      {items.length===0 && <div className="empty"><div className="empty-icon">📭</div>暂无知识</div>}
+      {items.map(item=>(
+        <div className="timeline-item" key={item.id}>
+          <div className="flex flex-between items-center">
+            <strong style={{fontSize:15}}>{typeIcons[item.content_type]||'📄'} {item.title||item.id?.slice(0,8)}</strong>
+            <span className="text-secondary text-sm">{item.collected_at?.slice(0,10)}</span>
+          </div>
+          {item.summary && <p className="text-secondary text-sm mt-8" style={{lineHeight:1.6}}>{item.summary.slice(0,200)}{item.summary.length>200?'...':''}</p>}
+          <span className={"badge "+(typeBadgeClass[item.content_type]||'badge-gray')} style={{marginTop:8,display:'inline-block'}}>{typeLabels[item.content_type]||item.content_type}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ========== Main App ==========
+function App() {
+  const [page, setPage] = useState('dashboard');
+  const [pageProps, setPageProps] = useState({});
+  const [services, setServices] = useState({});
+  useEffect(() => { apiFetch('/settings/services').then(d=>d&&setServices(d)); }, []);
+  const navigate = (p, props = {}) => { setPage(p); setPageProps(props); };
+  const menuItems = [
+    {key:'dashboard',icon:'📊',label:'仪表盘',group:'概览'},
+    {key:'search',icon:'🔍',label:'搜索',group:'概览'},
+    {key:'add',icon:'➕',label:'添加知识',group:'知识'},
+    {key:'items',icon:'📚',label:'知识库',group:'知识'},
+    {key:'timeline',icon:'📅',label:'时间线',group:'知识'},
+    {key:'graph',icon:'🕸️',label:'知识图谱',group:'分析'},
+    {key:'topics',icon:'📂',label:'主题地图',group:'分析'},
+    {key:'wiki',icon:'📖',label:'百科',group:'分析'},
+    {key:'backup',icon:'💾',label:'备份',group:'系统'},
+    {key:'settings',icon:'⚙️',label:'设置',group:'系统'},
+  ];
+  const pages = {dashboard:DashboardPage,search:SearchPage,add:AddPage,items:ItemsPage,graph:GraphPage,topics:TopicsPage,wiki:WikiPage,timeline:TimelinePage,backup:BackupPage,settings:SettingsPage};
+  const CurrentPage = pages[page] || DashboardPage;
+  const groups = [...new Set(menuItems.map(m=>m.group))];
+
+  return (
+    <div>
+      <div className="app-header">
+        <div className="brand"><h1>🧠 Knowledge Brain</h1><span className="badge-ver">v0.2.0</span></div>
+        <div className="text-xs" style={{opacity:.85}}>
+          {services.embedding_available ? '🟢' : '🔴'} 嵌入 {services.llm_available ? '🟢' : '🔴'} LLM
+        </div>
+      </div>
+      <div className="main-layout">
+        <div className="sidebar">
+          {groups.map(g => (
+            <div key={g}>
+              <div className="section-label">{g}</div>
+              {menuItems.filter(m=>m.group===g).map(item=>(
+                <div key={item.key} className={'menu-item'+(page===item.key?' active':'')} onClick={()=>navigate(item.key)}>
+                  <span className="menu-icon">{item.icon}</span> {item.label}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="content"><CurrentPage {...pageProps} onNavigate={navigate} /></div>
+      </div>
+    </div>
+  );
+}
+
+document.getElementById('root').innerHTML = '<div id="app-root"></div>';
+const root = ReactDOM.createRoot(document.getElementById('app-root'));
 root.render(<App />);
 </script>
 </body>
