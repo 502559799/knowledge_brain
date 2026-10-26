@@ -9,7 +9,7 @@ class BookmarkCollector(BaseCollector):
     def collect(self, source: Any, **kwargs: Any) -> CollectResult:
         url = str(source)
         try:
-            title = kwargs.pop("title", url)
+            title = kwargs.pop("title", None) or url
             content = f"# {title}\n\n书签链接: {url}"
             metadata = self._generate_metadata(title, content, url, **kwargs)
             filename = self._safe_filename("bookmark", title)
@@ -24,7 +24,7 @@ class BookmarkCollector(BaseCollector):
         """从浏览器书签HTML文件导入"""
         from pathlib import Path
         content = Path(html_path).read_text(encoding="utf-8")
-        urls = re.findall(r'<a[^>]+href="([^"]+)"[^>]*>([^<]*)</a>', content)
+        urls = re.findall(r'<a[^>]+href="([^"]+)"[^>]*>([^<]*)</a>', content, flags=re.IGNORECASE)
         results = []
         for url, title in urls:
             r = self.collect(url, title=title, **kwargs)

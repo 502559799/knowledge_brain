@@ -56,11 +56,13 @@ class TopicClusterer(BaseProcessor):
             clusterer = HDBSCAN(min_cluster_size=self.min_cluster_size, metric="euclidean")
             labels = clusterer.fit_predict(X)
 
+            if not any(label >= 0 for label in labels):
+                return {"clusters": 0, "classified": 0, "noise": len(labels)}
+
             cursor.execute("DELETE FROM wiki_articles")
             cursor.execute("DELETE FROM wiki_categories")
             cursor.execute("DELETE FROM knowledge_topics")
             cursor.execute("DELETE FROM topic_clusters")
-            conn.commit()
 
             clusters = {}
             noise = 0

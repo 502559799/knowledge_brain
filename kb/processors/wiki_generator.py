@@ -14,9 +14,11 @@ logger = logging.getLogger(__name__)
 class WikiGenerator(BaseProcessor):
     """基于主题聚类和LLM生成Wiki百科文章"""
 
-    def __init__(self, config: Optional[Config] = None, **kwargs):
+    def __init__(self, config: Optional[Config] = None, enhance_with_llm: bool = True, **kwargs):
         super().__init__(**kwargs)
         self.config = config or Config()
+        self.enhance_with_llm = enhance_with_llm
+        self.enhancement_errors = []
         self.wiki_cfg = self.config.get("wiki", {})
         self.enabled = self.wiki_cfg.get("enabled", True)
 
@@ -35,6 +37,8 @@ class WikiGenerator(BaseProcessor):
         if db_path is None:
             db_path = str(self.config.data_dir / "db" / "metadata.db")
 
+        from kb.storage.sqlite_storage import SQLiteStorage
+        self._reading_storage = SQLiteStorage(db_path)
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         try:
@@ -51,13 +55,14 @@ class WikiGenerator(BaseProcessor):
             return count
         finally:
             conn.close()
+            self._reading_storage.close()
 
     def _generate_for_topic(self, cursor, conn, topic: Dict) -> None:
         topic_id = topic["id"]
         topic_label = topic["label"]
 
         # Get documents in this topic
-        cursor.execute("""SELECT k.id, k.title, k.summary, k.content_type
+        cursor.execute("""SELECT k.*
                           FROM knowledge_topics kt
                           JOIN knowledge k ON kt.knowledge_id = k.id
                           WHERE kt.cluster_id = ?
@@ -65,6 +70,14 @@ class WikiGenerator(BaseProcessor):
         docs = [dict(r) for r in cursor.fetchall()]
         if not docs:
             return
+
+        from pathlib import Path
+        from kb.services.reading import read_item
+        for doc in docs:
+            if not doc.get('title'):
+                doc['title']=Path(doc.get('source') or '').name or '未命名知识'
+            if not doc.get('summary'):
+                doc['summary']=read_item(self._reading_storage,self.config,doc)['content'][:512]
 
         # Get entities mentioned in these documents
         doc_ids = [d["id"] for d in docs]
@@ -86,7 +99,7 @@ class WikiGenerator(BaseProcessor):
                        (category_id, topic_id, category_name, category_desc, json.dumps(doc_ids)))
 
         # Generate main article
-        article_id = f"art-{topic_id}-{uuid.uuid4().hex[:8]}"
+        article_id = f"art-{topic_id}-overview"
         article_title = f"{topic_label} - 主题概览"
         article_content = self._build_article_content(topic_label, docs, entities)
 
@@ -102,7 +115,8 @@ class WikiGenerator(BaseProcessor):
         conn.commit()
 
         # Try to enhance with LLM if available
-        self._try_llm_enhance(cursor, conn, topic_id, category_id, docs, entities)
+        if self.enhance_with_llm:
+            self._try_llm_enhance(cursor, conn, topic_id, category_id, docs, entities)
 
     def _build_article_content(self, topic_label: str, docs: List[Dict], entities: List[Dict]) -> str:
         """Build basic article content without LLM"""
@@ -128,7 +142,7 @@ class WikiGenerator(BaseProcessor):
                 lines.append(f"- {icon} **{title}**\n  {summary[:200]}")
             else:
                 lines.append(f"- {icon} **{title}**")
-        lines.append("")
+            lines.append("")
         return "\n".join(lines)
 
     def _try_llm_enhance(self, cursor, conn, topic_id: int, category_id: str, docs: List[Dict], entities: List[Dict]) -> None:
@@ -164,7 +178,7 @@ class WikiGenerator(BaseProcessor):
             )
             llm_summary = resp.choices[0].message.content.strip()
             if llm_summary:
-                article_id = f"art-{topic_id}-llm-{uuid.uuid4().hex[:8]}"
+                article_id = f"art-{topic_id}-llm"
                 cursor.execute("""INSERT OR REPLACE INTO wiki_articles (article_id, topic_id, category_id, title, content, entity_summary, compiled_at)
                                   VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
                                (article_id, topic_id, category_id, "AI 主题摘要", llm_summary, ent_text))
@@ -172,4 +186,5 @@ class WikiGenerator(BaseProcessor):
                                (category_id, category_id))
                 conn.commit()
         except Exception as e:
+            self.enhancement_errors.append(f"主题 {topic_id} 的 AI 摘要未生成，请检查 LLM 连接与模型配置。")
             logger.debug(f"LLM wiki enhancement skipped: {e}")

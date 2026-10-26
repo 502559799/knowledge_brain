@@ -39,7 +39,7 @@ class GraphQuery:
         return {"nodes": nodes, "edges": edges, "stats": {"total_entities": total_e, "total_relations": total_r, "displayed_nodes": len(nodes), "displayed_edges": len(edges)}}
 
     def _get_subgraph(self, cursor, entity_id: int, depth: int, limit: int) -> Dict[str, Any]:
-        cursor.execute("""WITH RECURSIVE related(entity_id, d) AS (SELECT ?, 0 UNION ALL
+        cursor.execute("""WITH RECURSIVE related(entity_id, d) AS (SELECT ?, 0 UNION
             SELECT CASE WHEN er.source_entity_id = r.entity_id THEN er.target_entity_id ELSE er.source_entity_id END, r.d + 1
             FROM entity_relations er JOIN related r ON (er.source_entity_id = r.entity_id OR er.target_entity_id = r.entity_id) WHERE r.d < ?)
             SELECT DISTINCT entity_id FROM related LIMIT ?""", (entity_id, depth, limit))
@@ -70,7 +70,7 @@ class GraphQuery:
     def get_related_documents(self, knowledge_id: str, limit: int = 10) -> List[Dict]:
         cursor = self.storage.conn.cursor()
         try:
-            cursor.execute("SELECT dr.target_knowledge_id as knowledge_id, k.title, dr.relation_type, dr.score FROM document_relations dr JOIN knowledge k ON k.id = dr.target_knowledge_id WHERE dr.source_knowledge_id = ? UNION ALL SELECT dr.source_knowledge_id, k.title, dr.relation_type, dr.score FROM document_relations dr JOIN knowledge k ON k.id = dr.source_knowledge_id WHERE dr.target_knowledge_id = ? ORDER BY score DESC LIMIT ?", (knowledge_id, knowledge_id, limit))
+            cursor.execute("SELECT dr.target_knowledge_id as knowledge_id, k.title, dr.relation_type, dr.score FROM document_relations dr JOIN knowledge k ON k.id = dr.target_knowledge_id WHERE dr.source_knowledge_id = ? UNION SELECT dr.source_knowledge_id, k.title, dr.relation_type, dr.score FROM document_relations dr JOIN knowledge k ON k.id = dr.source_knowledge_id WHERE dr.target_knowledge_id = ? ORDER BY score DESC LIMIT ?", (knowledge_id, knowledge_id, limit))
             return [dict(r) for r in cursor.fetchall()]
         finally:
             cursor.close()

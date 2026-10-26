@@ -90,9 +90,9 @@ class ChromaStorage:
         try:
             self.collection.delete(ids=ids)
             try:
-                self._get_chunks_collection().delete(ids=ids)
+                self._get_chunks_collection().delete(where={"knowledge_id": {"$in": ids}})
             except Exception:
-                pass
+                raise
             return True
         except Exception as e:
             raise Exception(f"删除失败: {e}") from e

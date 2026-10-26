@@ -1,26 +1,22 @@
 """异步知识挖掘Worker - 后台线程执行: 分块→嵌入→ChromaDB→实体抽取→关系发现"""
 import logging
 import threading
-import uuid
+from concurrent.futures import ThreadPoolExecutor, Future
 from typing import Optional
 
 from kb.config import Config
 
 logger = logging.getLogger(__name__)
 _mining_lock = threading.Lock()
+_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="kb-mining")
 
 
 def mine_document_async(knowledge_id: str, title: str, content: str, db_path: str,
                         chroma_path: Optional[str] = None,
-                        config_file: Optional[str] = None) -> None:
+                        config_file: Optional[str] = None) -> Future:
     """异步挖掘单文档: 分块→嵌入→ChromaDB存储→实体抽取→关系发现"""
-    thread = threading.Thread(
-        target=_mine_document,
-        args=(knowledge_id, title, content, db_path, chroma_path, config_file),
-        daemon=True,
-        name=f"mine-{knowledge_id[:8]}",
-    )
-    thread.start()
+    return _executor.submit(_mine_document, knowledge_id, title, content, db_path, chroma_path, config_file)
+
 
 
 def _mine_document(knowledge_id: str, title: str, content: str, db_path: str,
@@ -42,14 +38,18 @@ def _mine_document(knowledge_id: str, title: str, content: str, db_path: str,
                 )
                 from kb.storage.sqlite_storage import SQLiteStorage
                 storage = SQLiteStorage(db_path)
-                chunk_result = chunker.process(content or title or "")
-                if chunk_result.success and chunk_result.data:
-                    for ck in chunk_result.data:
-                        chunk_id = str(uuid.uuid4())
-                        storage.add_chunk(id=chunk_id, knowledge_id=knowledge_id,
-                                          chunk_index=ck["index"], content=ck["content"])
-                        chunks_info.append({"id": chunk_id, "index": ck["index"], "content": ck["content"]})
-                    logger.info(f"[mine] 分块完成: {knowledge_id[:8]}, {len(chunks_info)} chunks")
+                if not storage.get_knowledge(knowledge_id):
+                    storage.close()
+                    return
+                existing_chunks = storage.get_chunks(knowledge_id)
+                if existing_chunks:
+                    chunks_info = [{"id": c["id"], "index": c["chunk_index"], "content": c["content"]} for c in existing_chunks]
+                else:
+                    chunk_result = chunker.process(content or title or "")
+                    if chunk_result.success:
+                        for ck in chunk_result.data:
+                            storage.add_chunk(ck["id"], knowledge_id, ck["index"], ck["content"])
+                            chunks_info.append(ck)
                 storage.close()
             except Exception as e:
                 logger.error(f"[mine] 分块错误: {e}")
@@ -108,7 +108,7 @@ def _mine_document(knowledge_id: str, title: str, content: str, db_path: str,
                         batch = chunks_info[i:i + batch_size]
                         texts = [ck["content"] for ck in batch]
                         try:
-                            embs = embedder.embed(texts)
+                            embs = embedder.embed([f"{title}\n{text}" for text in texts])
                             if embs and len(embs) == len(batch):
                                 chroma.add_chunks(
                                     ids=[ck["id"] for ck in batch],

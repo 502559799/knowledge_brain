@@ -11,7 +11,7 @@ class NoteCollector(BaseCollector):
         if not text.strip():
             return CollectResult(success=False, error="笔记内容不能为空")
         try:
-            title = kwargs.pop("title", text[:50])
+            title = kwargs.pop("title", None) or text[:50]
             metadata = self._generate_metadata(title, text, "note", **kwargs)
             filename = self._safe_filename("note", title)
             saved_path = self._save_to_file(text, metadata, filename, "notes")

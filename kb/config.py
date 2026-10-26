@@ -50,7 +50,7 @@ class Config:
     """配置管理器"""
 
     def __init__(self, config_path: Optional[Path] = None):
-        self._config_path = config_path or Path.home() / ".knowledge-brain" / "config.yaml"
+        self._config_path = Path(config_path) if config_path else Path.home() / ".knowledge-brain" / "config.yaml"
         self._config: Dict[str, Any] = {}
         self.load()
 

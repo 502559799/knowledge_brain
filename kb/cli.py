@@ -83,10 +83,12 @@ def stats():
     stats_cmd()
 
 @cli.command()
-def web():
+@click.option("--host", default="127.0.0.1", show_default=True)
+@click.option("--port", default=8765, type=click.IntRange(1, 65535), show_default=True)
+def web(host, port):
     """启动Web界面"""
     import uvicorn
-    uvicorn.run("kb.web.app:app", host="0.0.0.0", port=8765, reload=False)
+    uvicorn.run("kb.web.app:app", host=host, port=port, reload=False)
 
 @cli.command()
 def mine():

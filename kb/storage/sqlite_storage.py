@@ -63,6 +63,15 @@ class SQLiteStorage:
                 c.execute("CREATE TRIGGER IF NOT EXISTS knowledge_ai AFTER INSERT ON knowledge BEGIN INSERT INTO knowledge_fts(rowid, title, summary) VALUES (NEW.rowid, NEW.title, NEW.summary); END")
                 c.execute("CREATE TRIGGER IF NOT EXISTS knowledge_ad AFTER DELETE ON knowledge BEGIN INSERT INTO knowledge_fts(knowledge_fts, rowid, title, summary) VALUES ('delete', OLD.rowid, OLD.title, OLD.summary); END")
                 c.execute("CREATE TRIGGER IF NOT EXISTS knowledge_au AFTER UPDATE ON knowledge BEGIN INSERT INTO knowledge_fts(knowledge_fts, rowid, title, summary) VALUES ('delete', OLD.rowid, OLD.title, OLD.summary); INSERT INTO knowledge_fts(rowid, title, summary) VALUES (NEW.rowid, NEW.title, NEW.summary); END")
+                c.execute("INSERT INTO knowledge_fts(knowledge_fts) VALUES ('rebuild')")
+            # Chunk full-text index, migrated and backfilled once for existing databases.
+            exists = c.execute("SELECT 1 FROM sqlite_master WHERE name='chunks_fts'").fetchone()
+            c.execute("CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(content, content='chunks', content_rowid='rowid')")
+            c.execute("CREATE TRIGGER IF NOT EXISTS chunks_ai AFTER INSERT ON chunks BEGIN INSERT INTO chunks_fts(rowid, content) VALUES (NEW.rowid, NEW.content); END")
+            c.execute("CREATE TRIGGER IF NOT EXISTS chunks_ad AFTER DELETE ON chunks BEGIN INSERT INTO chunks_fts(chunks_fts, rowid, content) VALUES ('delete', OLD.rowid, OLD.content); END")
+            c.execute("CREATE TRIGGER IF NOT EXISTS chunks_au AFTER UPDATE ON chunks BEGIN INSERT INTO chunks_fts(chunks_fts, rowid, content) VALUES ('delete', OLD.rowid, OLD.content); INSERT INTO chunks_fts(rowid, content) VALUES (NEW.rowid, NEW.content); END")
+            if not exists:
+                c.execute("INSERT INTO chunks_fts(chunks_fts) VALUES ('rebuild')")
             # 知识图谱
             c.execute("""CREATE TABLE IF NOT EXISTS entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL,
                 display_name TEXT NOT NULL, type TEXT NOT NULL, description TEXT, mention_count INTEGER DEFAULT 1,
@@ -91,6 +100,9 @@ class SQLiteStorage:
             c.execute("""CREATE TABLE IF NOT EXISTS wiki_articles (article_id TEXT PRIMARY KEY, topic_id INTEGER,
                 category_id TEXT, title TEXT, content TEXT, entity_summary TEXT, staleness_score REAL DEFAULT 0,
                 compiled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+            c.execute("CREATE TABLE IF NOT EXISTS vector_deletions (knowledge_id TEXT PRIMARY KEY)")
+            c.execute("CREATE TABLE IF NOT EXISTS knowledge_content (knowledge_id TEXT PRIMARY KEY REFERENCES knowledge(id) ON DELETE CASCADE, content TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 1)")
+            c.execute("CREATE TABLE IF NOT EXISTS knowledge_originals (knowledge_id TEXT PRIMARY KEY REFERENCES knowledge(id) ON DELETE CASCADE, file_path TEXT NOT NULL)")
             # 索引
             for idx in ["idx_k_content_type ON knowledge(content_type)", "idx_k_collected_at ON knowledge(collected_at)",
                          "idx_k_source ON knowledge(source, content_type)", "idx_k_content_hash ON knowledge(content_hash)",
@@ -156,7 +168,17 @@ class SQLiteStorage:
     def delete_knowledge(self, id: str) -> bool:
         try:
             with self._transaction() as c:
-                # Also delete associated ChromaDB chunks if needed
+                if not c.execute("SELECT 1 FROM knowledge WHERE id=?", (id,)).fetchone():
+                    return False
+                c.execute("UPDATE tags SET count=MAX(count-1, 0) WHERE id IN (SELECT tag_id FROM knowledge_tags WHERE knowledge_id=?)", (id,))
+                c.execute("UPDATE wiki_articles SET staleness_score=1 WHERE topic_id IN (SELECT cluster_id FROM knowledge_topics WHERE knowledge_id=?)", (id,))
+                c.execute("DELETE FROM entity_mentions WHERE knowledge_id=?", (id,))
+                c.execute("DELETE FROM entity_relation_sources WHERE knowledge_id=?", (id,))
+                c.execute("DELETE FROM document_relations WHERE source_knowledge_id=? OR target_knowledge_id=?", (id, id))
+                c.execute("DELETE FROM knowledge_topics WHERE knowledge_id=?", (id,))
+                c.execute("UPDATE topic_clusters SET document_count=(SELECT COUNT(*) FROM knowledge_topics WHERE cluster_id=topic_clusters.id)")
+                c.execute("UPDATE entities SET mention_count=(SELECT COUNT(*) FROM entity_mentions WHERE entity_id=entities.id)")
+                c.execute("INSERT OR IGNORE INTO vector_deletions VALUES (?)", (id,))
                 c.execute("DELETE FROM knowledge WHERE id = ?", (id,))
                 deleted = c.rowcount > 0
             return deleted
@@ -237,7 +259,7 @@ class SQLiteStorage:
             tag_id = row[0]
             c.execute("DELETE FROM knowledge_tags WHERE knowledge_id = ? AND tag_id = ?", (knowledge_id, tag_id))
             if c.rowcount > 0:
-                c.execute("UPDATE tags SET count = GREATEST(count - 1, 0) WHERE id = ?", (tag_id,))
+                c.execute("UPDATE tags SET count = MAX(count - 1, 0) WHERE id = ?", (tag_id,))
 
     def get_tags(self) -> List[Dict]:
         with self._lock:
@@ -404,22 +426,86 @@ class SQLiteStorage:
             return cluster_id
 
     # --- FTS Search ---
-    def fts_search(self, query: str, limit: int = 20) -> List[Dict]:
+    def search_metadata(self, ids: List[str], tags: Optional[List[str]] = None) -> Dict[str, Dict]:
+        """Batch authoritative metadata lookup; tag filters use AND semantics."""
+        found = {}
         with self._lock:
-            c = self.conn.cursor()
-            try:
-                try:
-                    c.execute("SELECT k.* FROM knowledge_fts f JOIN knowledge k ON k.rowid = f.rowid WHERE knowledge_fts MATCH ? ORDER BY rank LIMIT ?", (query, limit))
-                    rows = [dict(r) for r in c.fetchall()]
-                    if rows:
-                        return rows
-                except Exception:
-                    pass
-                c.execute("SELECT * FROM knowledge WHERE title LIKE ? OR summary LIKE ? ORDER BY collected_at DESC LIMIT ?",
-                           (f'%{query}%', f'%{query}%', limit))
-                return [dict(r) for r in c.fetchall()]
-            finally:
-                c.close()
+            for start in range(0, len(ids), 400):
+                batch = ids[start:start + 400]
+                placeholders = ",".join("?" for _ in batch)
+                if not batch:
+                    continue
+                sql = f"SELECT k.* FROM knowledge k WHERE k.id IN ({placeholders}) AND NOT EXISTS (SELECT 1 FROM vector_deletions vd WHERE vd.knowledge_id=k.id)"
+                params = list(batch)
+                for tag in tags or []:
+                    sql += " AND EXISTS (SELECT 1 FROM knowledge_tags kt JOIN tags t ON t.id=kt.tag_id WHERE kt.knowledge_id=k.id AND t.name=?)"
+                    params.append(tag)
+                found.update({r["id"]: dict(r) for r in self.conn.execute(sql, params)})
+        return found
+
+    @staticmethod
+    def tag_predicate(tags=None, tag_mode="and"):
+        tags = list(dict.fromkeys(t.strip() for t in tags or [] if t.strip()))
+        if not tags:
+            return "", []
+        if tag_mode not in ("and", "or"):
+            raise ValueError("Invalid tag mode")
+        exists = "EXISTS (SELECT 1 FROM knowledge_tags kt JOIN tags t ON t.id=kt.tag_id WHERE kt.knowledge_id=k.id AND t.name=?)"
+        return " AND (" + (" AND " if tag_mode == "and" else " OR ").join([exists]*len(tags)) + ")", tags
+
+    def list_filtered_knowledge(self, content_type=None, tags=None, tag_mode="and", limit=50, offset=0):
+        clause, params = self.tag_predicate(tags, tag_mode)
+        if content_type:
+            clause += " AND k.content_type=?"
+            params.append(content_type)
+        with self._lock:
+            rows = self.conn.execute("SELECT k.* FROM knowledge k WHERE 1=1" + clause +
+                                     " ORDER BY k.collected_at DESC, k.id LIMIT ? OFFSET ?", [*params, limit, offset])
+            return [dict(row) for row in rows]
+
+    def fts_search(self, query: str, limit: int = 20, tags: Optional[List[str]] = None, tag_mode: str = "and", content_type: Optional[str] = None) -> List[Dict]:
+        """Search both full passages and document metadata with literal user input."""
+        if not query.strip() or limit <= 0:
+            return []
+        import re
+        tokens = re.findall(r"\w+", query, re.UNICODE)
+        if not tokens:
+            return []
+        match = " OR ".join('"' + token + '"' for token in tokens)
+        filters, filter_params = self.tag_predicate(tags, tag_mode)
+        if content_type:
+            filters += " AND k.content_type=?"
+            filter_params.append(content_type)
+        with self._lock:
+            rows = self.conn.execute(
+                "SELECT k.*, c.id AS chunk_id, c.content AS matched_content, bm25(chunks_fts) AS rank "
+                "FROM chunks_fts JOIN chunks c ON c.rowid=chunks_fts.rowid "
+                "JOIN knowledge k ON k.id=c.knowledge_id WHERE chunks_fts MATCH ?" + filters +
+                " ORDER BY rank LIMIT ?", [match, *filter_params, limit * 4]).fetchall()
+            docs = self.conn.execute(
+                "SELECT k.*, k.summary AS matched_content, bm25(knowledge_fts) AS rank "
+                "FROM knowledge_fts JOIN knowledge k ON k.rowid=knowledge_fts.rowid "
+                "WHERE knowledge_fts MATCH ?" + filters + " ORDER BY rank LIMIT ?",
+                [match, *filter_params, limit]).fetchall()
+            # Chinese substring fallback: unicode61 does not segment Chinese words.
+            if not rows and not docs:
+                pattern = '%' + query.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
+                rows = self.conn.execute(
+                    "SELECT k.*, c.id AS chunk_id, c.content AS matched_content FROM chunks c "
+                    "JOIN knowledge k ON k.id=c.knowledge_id WHERE c.content LIKE ? ESCAPE '\\'" + filters + " LIMIT ?",
+                    [pattern, *filter_params, limit * 4]).fetchall()
+                docs = self.conn.execute(
+                    "SELECT k.*, k.summary AS matched_content FROM knowledge k "
+                    "WHERE (k.title LIKE ? ESCAPE '\\' OR k.summary LIKE ? ESCAPE '\\')" + filters + " LIMIT ?",
+                    [pattern, pattern, *filter_params, limit]).fetchall()
+            result, seen = [], set()
+            for row in [*rows, *docs]:
+                if row["id"] not in seen:
+                    result.append(dict(row))
+                    seen.add(row["id"])
+                if len(result) >= limit:
+                    break
+            return result
 
     # --- Dashboard ---
     def get_timeline(self, days: int = 30) -> List[Dict]:

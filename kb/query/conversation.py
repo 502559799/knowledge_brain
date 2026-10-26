@@ -44,8 +44,8 @@ class ConversationManager:
             if session_id not in self._sessions:
                 return []
             turns = self._sessions[session_id]["turns"]
-        n = n or self.history_turns
-        return turns[-n:]
+            n = self.history_turns if n is None else n
+            return [dict(turn) for turn in turns[-n:]] if n > 0 else []
 
     def get_or_create_session(self, session_id: Optional[str] = None) -> str:
         if session_id:

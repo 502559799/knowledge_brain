@@ -16,41 +16,23 @@ def _save_to_db(result, tags=None):
         return
     config = Config()
     storage = SQLiteStorage(str(config.data_dir / "db" / "metadata.db"))
-    doc_id = str(uuid.uuid4())
-
-    # Check for duplicates
-    existing = None
-    if result.metadata.get("source"):
-        existing = storage.source_exists(result.metadata["source"], result.metadata.get("content_type"))
-    if not existing and result.content_hash:
-        existing = storage.hash_exists(result.content_hash, result.metadata.get("content_type"))
-    if existing:
+    from kb.services.ingestion import ingest, read_content
+    content = read_content(result)
+    try:
+        doc_id, duplicate = ingest(storage, config, result, content, list(tags or []))
+    finally:
         storage.close()
-        click.echo(f"⚠️  已存在: {result.title} (id: {existing['id'][:8]}...)")
+    if duplicate:
+        if result.metadata.get('original_file_path'):
+            from pathlib import Path
+            original=Path(result.metadata['original_file_path'])
+            if original.resolve().is_relative_to((config.data_dir/'1_collect'/'originals').resolve()):
+                original.unlink(missing_ok=True)
+                original.parent.rmdir()
+                if result.file_path:
+                    result.file_path.unlink(missing_ok=True)
+        click.echo(f"⚠️ 已存在: {result.title} (id: {doc_id[:8]}...)")
         return
-
-    storage.add_knowledge(
-        id=doc_id, title=result.title or "",
-        content_type=result.metadata.get("content_type", ""),
-        source=result.metadata.get("source", ""),
-        summary=result.summary or "",
-        word_count=result.word_count,
-        file_path=str(result.file_path or ""),
-        content_hash=result.content_hash or "",
-    )
-    for tag in (tags or []):
-        storage.link_tag(doc_id, tag)
-    storage.close()
-
-    # Read full content for mining (increased from 3000 to 30000 chars for better chunking)
-    content = ""
-    if result.file_path and result.file_path.exists():
-        try:
-            content = result.file_path.read_text(encoding="utf-8", errors="ignore")[:30000]
-        except Exception:
-            content = result.summary or ""
-    elif result.summary:
-        content = result.summary
 
     chroma_path = config.get("storage.persist_directory", str(config.data_dir / "db" / "chroma"))
     db_path = str(config.data_dir / "db" / "metadata.db")

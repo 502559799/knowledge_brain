@@ -19,7 +19,7 @@ class FileCollector(BaseCollector):
 
         try:
             content = self._extract_content(file_path)
-            title = kwargs.pop("title", file_path.stem)
+            title = kwargs.pop("title", None) or file_path.stem
             metadata = self._generate_metadata(title, content, file_path, **kwargs)
             filename = self._safe_filename("file", title)
             saved_path = self._save_to_file(content, metadata, filename, "files")
@@ -52,7 +52,8 @@ class FileCollector(BaseCollector):
 
     def _generate_metadata(self, title: str, content: str, source: Any, **kwargs: Any) -> Dict[str, Any]:
         return {
-            "title": title, "source": str(source), "content_type": "file",
+            "title": title, "source": kwargs.get("source_url") or str(source), "content_type": "file",
+            "original_file_path": kwargs.get("original_file_path", ""),
             "collected_at": __import__("datetime").datetime.now().isoformat(),
             "tags": kwargs.get("tags", []),
         }

@@ -8,6 +8,8 @@ class Chunker(BaseProcessor):
     """递归字符分割分块器"""
     def __init__(self, max_chunk_size: int = 1000, chunk_overlap: int = 100, **kwargs):
         super().__init__(**kwargs)
+        if max_chunk_size <= 0 or not 0 <= chunk_overlap < max_chunk_size:
+            raise ValueError("需要 0 <= chunk_overlap < max_chunk_size")
         self.max_chunk_size = max_chunk_size
         self.chunk_overlap = chunk_overlap
 
@@ -38,6 +40,8 @@ class Chunker(BaseProcessor):
                         chunk_text = chunk_text[:pos + len(sep)]
                         break
             chunks.append({"id": str(uuid.uuid4()), "content": chunk_text.strip(), "index": idx, "doc_id": doc_id})
+            if end >= len(content):
+                break
             advance = max(len(chunk_text) - self.chunk_overlap, 1)
             start += advance
             idx += 1

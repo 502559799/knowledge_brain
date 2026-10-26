@@ -1,7 +1,7 @@
 """搜索路由"""
 from typing import Optional, List
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import APIRouter, Query
+from pydantic import BaseModel, Field, field_validator
 from kb.web.dependencies import (get_pipeline, get_config, get_semantic_search,
                                   get_keyword_search, get_conversation)
 
@@ -9,14 +9,21 @@ router = APIRouter()
 
 
 class SearchRequest(BaseModel):
-    query: str
+    query: str = Field(min_length=1, max_length=10000)
     tags: Optional[List[str]] = None
-    top_k: int = 5
+    top_k: int = Field(default=5, ge=1, le=100)
     session_id: Optional[str] = None
+
+    @field_validator("query")
+    @classmethod
+    def nonblank(cls, value):
+        if not value.strip():
+            raise ValueError("查询不能为空")
+        return value
 
 
 @router.get("/search/keyword")
-def keyword_search(q: str, limit: int = 20):
+def keyword_search(q: str = Query(min_length=1), limit: int = Query(default=20, ge=1, le=100)):
     ks = get_keyword_search()
     results = ks.search(q, limit)
     return [{"id": r.id, "content": r.content, "score": r.score, "metadata": r.metadata} for r in results]
@@ -35,7 +42,7 @@ def rag_search(req: SearchRequest):
     config = get_config()
     conv = get_conversation()
     session_id = conv.get_or_create_session(req.session_id)
-    rag = RAGQuery(config=config, conversation_manager=conv)
+    rag = RAGQuery(config=config, semantic_search=get_semantic_search(), keyword_search=get_keyword_search(), conversation_manager=conv)
     result = rag.query(req.query, req.tags, req.top_k, session_id=session_id)
     return {
         "answer": result.answer,

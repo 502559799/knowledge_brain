@@ -1,5 +1,7 @@
 """Web层依赖注入 - 单例管理"""
 import logging
+import threading
+from functools import wraps
 from typing import Optional
 from kb.config import Config
 from kb.storage.sqlite_storage import SQLiteStorage
@@ -17,6 +19,18 @@ _keyword_search_instance = None
 _embedder_instance = None
 
 
+_instance_lock = threading.RLock()
+
+
+def synchronized(function):
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        with _instance_lock:
+            return function(*args, **kwargs)
+    return wrapped
+
+
+@synchronized
 def get_config() -> Config:
     global _config_instance
     if _config_instance is None:
@@ -24,6 +38,7 @@ def get_config() -> Config:
     return _config_instance
 
 
+@synchronized
 def get_sqlite() -> SQLiteStorage:
     global _sqlite_instance
     if _sqlite_instance is None:
@@ -32,6 +47,7 @@ def get_sqlite() -> SQLiteStorage:
     return _sqlite_instance
 
 
+@synchronized
 def get_chroma() -> Optional[ChromaStorage]:
     global _chroma_instance
     if _chroma_instance is None:
@@ -42,9 +58,13 @@ def get_chroma() -> Optional[ChromaStorage]:
         except Exception as e:
             logger.warning(f"ChromaDB初始化失败（语义搜索不可用）: {e}")
             _chroma_instance = None
+    if _chroma_instance is not None:
+        from kb.services.deletion import flush_vector_deletions
+        flush_vector_deletions(get_sqlite(), _chroma_instance)
     return _chroma_instance
 
 
+@synchronized
 def get_embedder():
     """Singleton embedder instance"""
     global _embedder_instance
@@ -54,6 +74,7 @@ def get_embedder():
     return _embedder_instance
 
 
+@synchronized
 def get_semantic_search():
     global _semantic_search_instance
     if _semantic_search_instance is None:
@@ -62,10 +83,12 @@ def get_semantic_search():
             config=get_config(),
             chroma_storage=get_chroma(),
             embedder=get_embedder(),
+            storage=get_sqlite(),
         )
     return _semantic_search_instance
 
 
+@synchronized
 def get_keyword_search():
     global _keyword_search_instance
     if _keyword_search_instance is None:
@@ -74,6 +97,7 @@ def get_keyword_search():
     return _keyword_search_instance
 
 
+@synchronized
 def get_pipeline():
     global _pipeline_instance
     if _pipeline_instance is None:
@@ -81,10 +105,11 @@ def get_pipeline():
         config = get_config()
         ss = get_semantic_search()
         ks = get_keyword_search()
-        _pipeline_instance = RetrievalPipeline(config=config, semantic_search=ss, keyword_search=ks)
+        _pipeline_instance = RetrievalPipeline(config=config, semantic_search=ss, keyword_search=ks, conversation_manager=get_conversation())
     return _pipeline_instance
 
 
+@synchronized
 def get_conversation():
     global _conversation_instance
     if _conversation_instance is None:
@@ -97,3 +122,9 @@ def get_conversation():
             history_turns=conv_cfg.get("history_turns_in_context", 5),
         )
     return _conversation_instance
+
+
+@synchronized
+def reset_query_services():
+    global _pipeline_instance, _semantic_search_instance, _embedder_instance
+    _pipeline_instance = _semantic_search_instance = _embedder_instance = None

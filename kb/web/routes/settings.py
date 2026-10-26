@@ -46,6 +46,8 @@ def update_settings(req: UpdateSettingsRequest):
     if "backup_schedule" in updates:
         config.set("backup.schedule", updates["backup_schedule"])
     config.save()
+    from kb.web.dependencies import reset_query_services
+    reset_query_services()
     return {"success": True, "config": config.to_safe_dict()}
 
 

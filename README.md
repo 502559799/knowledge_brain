@@ -7,11 +7,11 @@
 - **多源采集**: 文件(PDF/MD/TXT)、网页、书签、笔记
 - **智能处理**: 文本分块、向量嵌入、3层降级标签提取、实体关系抽取
 - **知识图谱**: 实体关系构建、N-hop遍历、AntV G6力导向图可视化
-- **智能检索**: 语义搜索 + 关键词搜索 + RAG问答、6阶段检索管道
+- **智能检索**: 语义搜索 + 关键词搜索 + RAG问答、统一混合检索管道（RRF融合、来源引用、上下文预算）
 - **主题聚类**: HDBSCAN无监督聚类 + LLM标签生成 + 旭日图可视化
 - **知识百科**: LLM自动合成百科文章，支持[[wiki-link]]跳转
 - **可视化**: 仪表盘统计、图谱力导向图、主题旭日图、知识时间线
-- **备份恢复**: 本地备份 + 云存储(OSS/S3)
+- **备份恢复**: 本地归档备份（云存储配置预留）
 - **双界面**: CLI (`kbrain`) + Web API (FastAPI)
 
 ## 🚀 快速开始
@@ -24,9 +24,9 @@ pip install -e .
 kbrain init
 
 # 采集知识
-kbrain collect file add ~/doc.pdf
-kbrain collect webpage add https://example.com
-kbrain collect note add "重要笔记内容" --tags "ml,ai"
+kbrain collect file ~/doc.pdf
+kbrain collect webpage https://example.com
+kbrain collect note "重要笔记内容" --tags ml --tags ai
 
 # 搜索
 kbrain search rag "什么是机器学习?"
@@ -85,3 +85,14 @@ llm:
 ## 📜 License
 
 MIT
+
+## 工程升级与验证
+
+本次升级改为统一事务采集、正文 FTS5、RRF 混合检索、预算内证据引用，以及可重试的向量删除。
+详见 [升级说明](docs/UPGRADE.md)，包含测试、迁移方式、性能数据和当前限制。
+
+```bash
+pip install -e '.[dev]'
+PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q
+PYTHONDONTWRITEBYTECODE=1 python3 -m benchmarks.retrieval
+```

@@ -11,10 +11,11 @@ logger = logging.getLogger(__name__)
 class SemanticSearch:
     """基于向量嵌入的语义搜索，支持chunk级细粒度搜索"""
 
-    def __init__(self, config: Optional[Config] = None, chroma_storage=None, embedder=None):
+    def __init__(self, config: Optional[Config] = None, chroma_storage=None, embedder=None, storage=None):
         self.config = config or Config()
         self._chroma = chroma_storage
         self._embedder = embedder
+        self._storage = storage
 
     def _get_chroma(self):
         if self._chroma is not None:
@@ -33,6 +34,10 @@ class SemanticSearch:
 
     def search(self, query: str, tags: Optional[List[str]] = None, top_k: int = 5) -> List[SearchResult]:
         """语义搜索：优先使用chunk级向量（更精确），回退到文档级"""
+        if not query.strip() or top_k <= 0:
+            return []
+        requested_k = top_k
+        top_k = min(top_k * 4, 400)
         try:
             embedder = self._get_embedder()
             query_emb = embedder.embed_single(query)
@@ -55,7 +60,7 @@ class SemanticSearch:
                         doc_seen.add(doc_id)
                         score = 1.0 - chunk_results["distances"][i] if chunk_results.get("distances") else 0.0
                         content = chunk_results["documents"][i] if chunk_results.get("documents") else ""
-                        results.append(SearchResult(id=doc_id, content=content, metadata=meta, score=score))
+                        results.append(SearchResult(id=doc_id, content=content, metadata={**meta, "chunk_id": chunk_id}, score=score))
                         if len(results) >= top_k:
                             break
             except Exception as ce:
@@ -81,7 +86,17 @@ class SemanticSearch:
                 except Exception as de:
                     logger.debug(f"Doc-level search failed: {de}")
 
-            return results
+            if self._storage is None:
+                from kb.storage.sqlite_storage import SQLiteStorage
+                self._storage = SQLiteStorage(str(self.config.data_dir / "db" / "metadata.db"))
+            valid = self._storage.search_metadata([r.id for r in results], tags)
+            filtered = []
+            for result in results:
+                if result.id not in valid:
+                    continue
+                result.metadata = {**result.metadata, **valid[result.id]}
+                filtered.append(result)
+            return filtered[:requested_k]
         except Exception as e:
             logger.error(f"语义搜索失败: {e}")
             return []

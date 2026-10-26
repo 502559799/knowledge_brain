@@ -1,5 +1,7 @@
 """收集器基类 - 策略模式 + 模板方法"""
-import hashlib, re, unicodedata
+import hashlib, re, unicodedata, uuid
+import yaml
+from kb.config import Config
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -22,7 +24,7 @@ class CollectResult:
 class BaseCollector(ABC):
     """收集器抽象基类"""
     def __init__(self, output_dir: Optional[Path] = None) -> None:
-        self.output_dir = output_dir or (Path.home() / ".knowledge-brain" / "1_collect")
+        self.output_dir = output_dir or (Config().data_dir / "1_collect")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     @abstractmethod
@@ -40,7 +42,7 @@ class BaseCollector(ABC):
     def _save_to_file(self, content: str, metadata: Dict[str, Any], filename: str, sub_dir: str) -> Path:
         target_dir = self.output_dir / sub_dir
         target_dir.mkdir(parents=True, exist_ok=True)
-        yaml_header = "\n".join(f"{k}: {v}" for k, v in metadata.items())
+        yaml_header = yaml.safe_dump(metadata, allow_unicode=True, sort_keys=False).rstrip()
         full_content = f"---\n{yaml_header}\n---\n\n{content}"
         file_path = target_dir / filename
         file_path.write_text(full_content, encoding="utf-8")
@@ -58,8 +60,8 @@ class BaseCollector(ABC):
 
     @staticmethod
     def _safe_filename(prefix: str, title: Optional[str] = None) -> str:
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S_%f") + "_" + uuid.uuid4().hex[:8]
         if title:
             slug = re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode("ascii").lower())[:50].strip("-")
-            return f"{timestamp}_{slug}.md"
+            return f"{timestamp}_{slug or prefix}.md"
         return f"{timestamp}_{prefix}.md"

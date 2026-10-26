@@ -39,9 +39,6 @@ class DocRelationBuilder(BaseProcessor):
 
             cursor.execute("SELECT knowledge_id, embedding FROM document_embeddings")
             rows = cursor.fetchall()
-            if len(rows) < 2:
-                conn.commit()
-                return {"embedding_similarity": 0, "shared_entity": 0}
 
             emb_sim_count = 0
             doc_embs: List[tuple] = []
@@ -94,16 +91,14 @@ class DocRelationBuilder(BaseProcessor):
             cursor = conn.cursor()
             cursor.execute("SELECT embedding FROM document_embeddings WHERE knowledge_id = ?", (new_knowledge_id,))
             row = cursor.fetchone()
-            if not row:
-                return {"embedding_similarity": 0, "shared_entity": 0}
             try:
-                new_emb = np.array(json.loads(row[0]))
+                new_emb = np.array(json.loads(row[0])) if row else None
             except Exception:
-                return {"embedding_similarity": 0, "shared_entity": 0}
+                new_emb = None
 
             cursor.execute("SELECT knowledge_id, embedding FROM document_embeddings WHERE knowledge_id != ?", (new_knowledge_id,))
             emb_sim_count = 0
-            for existing_id, emb_json in cursor.fetchall():
+            for existing_id, emb_json in (cursor.fetchall() if new_emb is not None else []):
                 try:
                     existing_emb = np.array(json.loads(emb_json))
                     sim = self._cosine_sim(new_emb, existing_emb)

@@ -72,7 +72,7 @@ class EntityExtractor(BaseProcessor):
                     continue
                 norm_name = name.strip().lower()
                 cursor.execute("INSERT INTO entities (name, display_name, type, description) VALUES (?, ?, ?, ?) "
-                               "ON CONFLICT(name, type) DO UPDATE SET mention_count = mention_count + 1, updated_at = CURRENT_TIMESTAMP",
+                               "ON CONFLICT(name, type) DO UPDATE SET updated_at = CURRENT_TIMESTAMP",
                                (norm_name, name, etype, desc))
                 cursor.execute("SELECT id FROM entities WHERE name = ? AND type = ?", (norm_name, etype))
                 row = cursor.fetchone()
@@ -81,6 +81,7 @@ class EntityExtractor(BaseProcessor):
                     entity_name_to_id[norm_name] = eid
                     cursor.execute("INSERT OR IGNORE INTO entity_mentions (entity_id, knowledge_id, context) VALUES (?, ?, ?)",
                                    (eid, knowledge_id, desc[:200]))
+                    cursor.execute("UPDATE entities SET mention_count=(SELECT COUNT(*) FROM entity_mentions WHERE entity_id=?) WHERE id=?", (eid, eid))
                     entities_saved += 1
 
             for rel in extracted.get("relations", []):
@@ -95,7 +96,7 @@ class EntityExtractor(BaseProcessor):
                 if not src_id or not tgt_id:
                     continue
                 cursor.execute("INSERT INTO entity_relations (source_entity_id, target_entity_id, relation_type) VALUES (?, ?, ?) "
-                               "ON CONFLICT(source_entity_id, target_entity_id, relation_type) DO UPDATE SET weight = weight + 1",
+                               "ON CONFLICT(source_entity_id, target_entity_id, relation_type) DO NOTHING",
                                (src_id, tgt_id, rtype))
                 cursor.execute("SELECT id FROM entity_relations WHERE source_entity_id=? AND target_entity_id=? AND relation_type=?",
                                (src_id, tgt_id, rtype))
@@ -103,6 +104,7 @@ class EntityExtractor(BaseProcessor):
                 if rrow:
                     cursor.execute("INSERT OR IGNORE INTO entity_relation_sources (relation_id, knowledge_id, context) VALUES (?, ?, ?)",
                                    (rrow[0], knowledge_id, ctx[:200]))
+                    cursor.execute("UPDATE entity_relations SET weight=(SELECT COUNT(*) FROM entity_relation_sources WHERE relation_id=?) WHERE id=?", (rrow[0], rrow[0]))
                     relations_saved += 1
             conn.commit()
             return {"entities_saved": entities_saved, "relations_saved": relations_saved}
